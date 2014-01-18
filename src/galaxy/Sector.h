@@ -10,6 +10,7 @@
 #include "galaxy/CustomSystem.h"
 #include "GalaxyCache.h"
 #include "RefCounted.h"
+#include "PersistSystemData.h"
 #include <string>
 #include <vector>
 
@@ -25,8 +26,11 @@ public:
 
 	static float DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, RefCountedPtr<const Sector> b, int sysIdxB);
 	static void Init();
+	static void SerializeExplorer(Serializer::Writer &wr);
+	static void UnserializeExplorer(Serializer::Reader &rd);
 
 	static SectorCache cache;
+	static PersistSystemData<Sint32> exploredSystems;
 
 	// Sector is within a bounding rectangle - used for SectorView m_sectorCache pruning.
 	bool WithinBox(const int Xmin, const int Xmax, const int Ymin, const int Ymax, const int Zmin, const int Zmax) const;
@@ -57,6 +61,7 @@ public:
 		void SetPopulation(fixed pop) { m_population = pop; }
 		StarSystem::ExplorationState GetExplored() const { return m_explored; }
 		bool IsExplored() const { return m_explored != StarSystem::eUNEXPLORED; }
+		void SetExplored(StarSystem::ExplorationState e);
 
 		bool IsSameSystem(const SystemPath &b) const {
 			return sx == b.sectorX && sy == b.sectorY && sz == b.sectorZ && idx == b.systemIndex;

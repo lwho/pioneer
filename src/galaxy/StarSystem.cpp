@@ -1172,6 +1172,8 @@ void StarSystem::MakeBinaryPair(SystemBody *a, SystemBody *b, fixed minDist, Ran
 void StarSystem::SetExplored(ExplorationState explored)
 {
 	m_explored = explored;
+	RefCountedPtr<Sector> sec = Sector::cache.GetCached(m_path);
+	sec->m_systems[m_path.systemIndex].SetExplored(explored);
 	MakeShortDescription();
 }
 

@@ -50,6 +50,7 @@ Game::Game(const SystemPath &path, double time) :
 	m_player->SetFrame(station->GetFrame());
 	m_player->SetDockedWith(station, 0);
 
+	Sector::Init();
 	Polit::Init();
 
 	CreateViews();
@@ -78,6 +79,7 @@ Game::Game(const SystemPath &path, const vector3d &pos, double time) :
 	m_player->SetPosition(pos);
 	m_player->SetVelocity(vector3d(0,0,0));
 
+	Sector::Init();
 	Polit::Init();
 
 	CreateViews();
@@ -157,6 +159,10 @@ Game::Game(Serializer::Reader &rd) :
 	for (Uint32 i = 0; i < nclouds; i++)
 		m_hyperspaceClouds.push_back(static_cast<HyperspaceCloud*>(Body::Unserialize(section, 0)));
 
+	// Sector data changed in-game (system exploration)
+	section = rd.RdSection("Sector");
+	Sector::UnserializeExplorer(section);
+
 	// system political stuff
 	section = rd.RdSection("Polit");
 	Polit::Unserialize(section);
@@ -219,6 +225,10 @@ void Game::Serialize(Serializer::Writer &wr)
 
 	wr.WrSection("HyperspaceClouds", section.GetData());
 
+	// Sector data changed in-game (system exploration)
+	section = Serializer::Writer();
+	Sector::SerializeExplorer(section);
+	wr.WrSection("Sector", section.GetData());
 
 	// system political data (crime etc)
 	section = Serializer::Writer();

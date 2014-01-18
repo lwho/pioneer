@@ -19,6 +19,23 @@ static const char *sys_names[SYS_NAME_FRAGS] =
 const float Sector::SIZE = 8.f;
 
 SectorCache Sector::cache;
+PersistSystemData<Sint32> Sector::exploredSystems;
+
+void Sector::Init()
+{
+	exploredSystems.Clear();
+}
+
+void Sector::SerializeExplorer(Serializer::Writer &wr)
+{
+	exploredSystems.Serialize(wr);
+}
+
+void Sector::UnserializeExplorer(Serializer::Reader &rd)
+{
+	exploredSystems.Clear();
+	exploredSystems.Unserialize(rd, &exploredSystems);
+}
 
 void Sector::GetCustomSystems(Random& rng)
 {
@@ -52,6 +69,11 @@ void Sector::GetCustomSystems(Random& rng)
 			if (cs->explored)
 				s.m_explored = StarSystem::eEXPLORED_AT_START;
 		}
+		// Note: We first must do the random initialization above to not desync the random generator!
+		Sint32 explored_in_game = exploredSystems.Get(SystemPath(sx, sy, sz, sysIdx), -1);
+		if (explored_in_game >= 0)
+			s.m_explored = (explored_in_game ? StarSystem::eEXPLORED_BY_PLAYER : StarSystem::eUNEXPLORED);
+
 		m_systems.push_back(s);
 	}
 }
@@ -105,6 +127,11 @@ Sector::Sector(const SystemPath& path, SectorCache* cache) : sx(path.sectorX), s
 				s.m_explored = StarSystem::eEXPLORED_AT_START;
 			else
 				s.m_explored = StarSystem::eUNEXPLORED;
+
+			// Note: We first must do the random initialization above to not desync the random generator!
+			Sint32 explored_in_game = exploredSystems.Get(SystemPath(sx, sy, sz, customCount + i), -1);
+			if (explored_in_game >= 0)
+				s.m_explored = (explored_in_game ? StarSystem::eEXPLORED_BY_PLAYER : StarSystem::eUNEXPLORED);
 
 			Uint32 weight = rng.Int32(1000000);
 
@@ -355,6 +382,14 @@ bool Sector::Contains(const SystemPath &sysPath) const
 	if (sy != sysPath.sectorY) return false;
 	if (sz != sysPath.sectorZ) return false;
 	return true;
+}
+
+void Sector::System::SetExplored(StarSystem::ExplorationState e)
+{
+	if (e != m_explored) {
+		exploredSystems.Set(SystemPath(sx, sy, sz, idx), (e != StarSystem::eUNEXPLORED));
+		m_explored = e;
+	}
 }
 
 void Sector::Dump(FILE* file, const char* indent) const
