@@ -609,8 +609,7 @@ void SectorView::PutSystemLabels(RefCountedPtr<Sector> sec, const vector3f &orig
 		if (m_hiddenFactions.find((*sys).faction) != m_hiddenFactions.end() && can_skip) continue;
 
 		// determine if system in hyperjump range or not
-		RefCountedPtr<const Sector> playerSec = GetCached(m_current);
-		float dist = Sector::DistanceBetween(sec, sysIdx, playerSec, m_current.systemIndex);
+		float dist = Sector::DistanceBetween(sec, sysIdx, m_current);
 		bool inRange = dist <= m_playerHyperspaceRange;
 
 		// place the label
@@ -716,12 +715,9 @@ void SectorView::UpdateDistanceLabelAndLine(DistanceIndicator &distance, const S
 	if (src.IsSameSystem(dest)) {
 		distance.label->SetText("");
 	} else {
-		RefCountedPtr<const Sector> sec = GetCached(dest);
-		RefCountedPtr<const Sector> srcSec = GetCached(src);
-
 		char format[256];
 
-		const float dist = Sector::DistanceBetween(sec, dest.systemIndex, srcSec, src.systemIndex);
+		const float dist = Sector::DistanceBetween(dest, src);
 
 		int fuelRequired;
 		double dur;
@@ -927,8 +923,7 @@ void SectorView::DrawNearSector(const int sx, const int sy, const int sz, const 
 		if (m_hiddenFactions.find(i->faction) != m_hiddenFactions.end() && can_skip) continue;
 
 		// determine if system in hyperjump range or not
-		RefCountedPtr<const Sector> playerSec = GetCached(m_current);
-		float dist = Sector::DistanceBetween(ps, sysIdx, playerSec, m_current.systemIndex);
+		float dist = Sector::DistanceBetween(SystemPath(sx, sy, sz, sysIdx), m_current);
 		bool inRange = dist <= m_playerHyperspaceRange;
 
 		// don't worry about looking for inhabited systems if they're

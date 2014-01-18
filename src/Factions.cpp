@@ -557,8 +557,7 @@ Faction::Faction() :
 	hasHomeworld(false),
 	foundingDate(0.0),
 	expansionRate(0.0),
-	colour(BAD_FACTION_COLOUR),
-	m_homesector(0)
+	colour(BAD_FACTION_COLOUR)
 {
 	PROFILE_SCOPED()
 	govtype_weights_total = 0;

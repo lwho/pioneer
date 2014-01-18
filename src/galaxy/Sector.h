@@ -27,6 +27,8 @@ public:
 	Sector& operator=(const Sector&) = delete;
 
 	static float DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, RefCountedPtr<const Sector> b, int sysIdxB);
+	static float DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, const SystemPath& b);
+	static float DistanceBetween(const SystemPath& a, const SystemPath& b);
 	static void Init();
 
 	static SectorCache cache;

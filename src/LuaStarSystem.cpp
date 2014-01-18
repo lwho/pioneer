@@ -241,7 +241,6 @@ static int l_starsystem_get_nearby_systems(lua_State *l)
 	const int here_y = here.sectorY;
 	const int here_z = here.sectorZ;
 	const Uint32 here_idx = here.systemIndex;
-	RefCountedPtr<const Sector> here_sec = Sector::cache.GetCached(here);
 
 	const int diff_sec = int(ceil(dist_ly/Sector::SIZE));
 
@@ -254,7 +253,7 @@ static int l_starsystem_get_nearby_systems(lua_State *l)
 					if (x == here_x && y == here_y && z == here_z && idx == here_idx)
 						continue;
 
-					if (Sector::DistanceBetween(here_sec, here_idx, sec, idx) > dist_ly)
+					if (Sector::DistanceBetween(here, SystemPath(x, y, z, idx)) > dist_ly)
 						continue;
 
 					RefCountedPtr<StarSystem> sys = StarSystemCache::GetCached(SystemPath(x, y, z, idx));
@@ -319,10 +318,7 @@ static int l_starsystem_distance_to(lua_State *l)
 		loc2 = &(s2->GetPath());
 	}
 
-	RefCountedPtr<const Sector> sec1 = Sector::cache.GetCached(*loc1);
-	RefCountedPtr<const Sector> sec2 = Sector::cache.GetCached(*loc2);
-
-	double dist = Sector::DistanceBetween(sec1, loc1->systemIndex, sec2, loc2->systemIndex);
+	double dist = Sector::DistanceBetween(loc1, loc2);
 
 	lua_pushnumber(l, dist);
 

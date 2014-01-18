@@ -247,6 +247,21 @@ float Sector::DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, RefCou
 	return dv.Length();
 }
 
+float Sector::DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, const SystemPath& b)
+{
+	PROFILE_SCOPED()
+	RefCountedPtr<const Sector> secB = cache.GetCached(b);
+	return DistanceBetween(a, sysIdxA, secB, b.systemIndex);
+}
+
+float Sector::DistanceBetween(const SystemPath& a, const SystemPath& b)
+{
+	PROFILE_SCOPED()
+	RefCountedPtr<const Sector> secA = cache.GetCached(a);
+	RefCountedPtr<const Sector> secB = cache.GetCached(b);
+	return DistanceBetween(secA, a.systemIndex, secB, b.systemIndex);
+}
+
 const std::string Sector::GenName(System &sys, int si, Random &rng)
 {
 	PROFILE_SCOPED()

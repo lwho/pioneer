@@ -281,10 +281,7 @@ static int l_sbodypath_distance_to(lua_State *l)
 		loc2 = &(s2->GetPath());
 	}
 
-	RefCountedPtr<const Sector> sec1 = Sector::cache.GetCached(*loc1);
-	RefCountedPtr<const Sector> sec2 = Sector::cache.GetCached(*loc2);
-
-	double dist = Sector::DistanceBetween(sec1, loc1->systemIndex, sec2, loc2->systemIndex);
+	double dist = Sector::DistanceBetween(loc1, loc2);
 
 	lua_pushnumber(l, dist);
 
