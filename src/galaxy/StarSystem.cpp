@@ -9,6 +9,7 @@
 #include "Serializer.h"
 #include "Pi.h"
 #include "LuaNameGen.h"
+#include "LuaEvent.h"
 #include "enum_table.h"
 #include <map>
 #include <string>
@@ -1175,6 +1176,7 @@ void StarSystem::SetExplored(ExplorationState explored)
 	RefCountedPtr<Sector> sec = Sector::cache.GetCached(m_path);
 	sec->m_systems[m_path.systemIndex].SetExplored(explored);
 	MakeShortDescription();
+	LuaEvent::Queue("onSystemExplored", this);
 }
 
 SystemBody::SystemBody(const SystemPath& path) : m_parent(nullptr), m_path(path), m_seed(0), m_aspectRatio(1,1), m_orbMin(0),
