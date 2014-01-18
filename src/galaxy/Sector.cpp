@@ -38,6 +38,7 @@ void Sector::GetCustomSystems(Random& rng)
 		}
 		s.m_customSys = cs;
 		s.m_seed = cs->seed;
+		s.m_explored = StarSystem::eUNEXPLORED;
 		if (cs->want_rand_explored) {
 			/*
 			 * 0 - ~500ly from sol: explored
@@ -45,9 +46,11 @@ void Sector::GetCustomSystems(Random& rng)
 			 * ~700ly+: unexplored
 			 */
 			int dist = isqrt(1 + sx*sx + sy*sy + sz*sz);
-			s.m_explored = ((dist <= 90) && ( dist <= 65 || rng.Int32(dist) <= 40)) || Faction::IsHomeSystem(SystemPath(sx, sy, sz, sysIdx));
+			if (((dist <= 90) && ( dist <= 65 || rng.Int32(dist) <= 40)) || Faction::IsHomeSystem(SystemPath(sx, sy, sz, sysIdx)))
+				s.m_explored = StarSystem::eEXPLORED_AT_START;
 		} else {
-			s.m_explored = cs->explored;
+			if (cs->explored)
+				s.m_explored = StarSystem::eEXPLORED_AT_START;
 		}
 		m_systems.push_back(s);
 	}
@@ -98,7 +101,10 @@ Sector::Sector(const SystemPath& path, SectorCache* cache) : sx(path.sectorX), s
 			 * ~700ly+: unexplored
 			 */
 			int dist = isqrt(1 + sx*sx + sy*sy + sz*sz);
-			s.m_explored = ((dist <= 90) && ( dist <= 65 || rng.Int32(dist) <= 40)) || Faction::IsHomeSystem(SystemPath(sx, sy, sz, customCount + i));
+			if (((dist <= 90) && ( dist <= 65 || rng.Int32(dist) <= 40)) || Faction::IsHomeSystem(SystemPath(sx, sy, sz, customCount + i)))
+				s.m_explored = StarSystem::eEXPLORED_AT_START;
+			else
+				s.m_explored = StarSystem::eUNEXPLORED;
 
 			Uint32 weight = rng.Int32(1000000);
 

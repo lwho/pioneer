@@ -35,6 +35,7 @@ private:
 
 	RefCountedPtr<StarSystem> m_system;
 	const SystemBody *m_selectedObject;
+	bool m_unexplored;
 	float m_rot_x, m_rot_z;
 	float m_zoom, m_zoomTo;
 	double m_time;

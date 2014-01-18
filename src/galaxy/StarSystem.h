@@ -280,6 +280,12 @@ public:
 	static StarSystemCache attic;
 	static RefCountedPtr<StarSystemCache::Slave> cache;
 
+	enum ExplorationState {
+		eUNEXPLORED = 0,
+		eEXPLORED_BY_PLAYER = 1,
+		eEXPLORED_AT_START = 2
+	};
+
 	void ExportToLua(const char *filename);
 
 	const std::string &GetName() const { return m_name; }
@@ -316,7 +322,8 @@ public:
 	}
 
 	Faction* GetFaction() const  { return m_faction; }
-	bool GetUnexplored() const { return m_unexplored; }
+	bool GetUnexplored() const { return m_explored == eUNEXPLORED; }
+	void SetExplored(ExplorationState explored);
 	fixed GetMetallicity() const { return m_metallicity; }
 	fixed GetIndustrial() const { return m_industrial; }
 	int GetEconType() const { return m_econType; }
@@ -339,7 +346,7 @@ private:
 		m_bodies.push_back(RefCountedPtr<SystemBody>(body));
 		return body;
 	}
-	void MakeShortDescription(Random &rand);
+	void MakeShortDescription();
 	void MakePlanetsAround(SystemBody *primary, Random &rand);
 	void MakeRandomStar(SystemBody *sbody, Random &rand);
 	void MakeStarOfType(SystemBody *sbody, SystemBody::BodyType type, Random &rand);
@@ -361,7 +368,7 @@ private:
 	bool m_hasCustomBodies;
 
 	Faction* m_faction;
-	bool m_unexplored;
+	ExplorationState m_explored;
 	fixed m_metallicity;
 	fixed m_industrial;
 	int m_econType;
