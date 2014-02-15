@@ -3,6 +3,7 @@
 
 local Serializer = import("Serializer")
 local Character = import("Character")
+local FlightLog = import("FlightLog")
 local Lang = import("Lang")
 
 local l = Lang.GetResource("ui-core")
@@ -250,14 +251,20 @@ Mission = {
 		if not (type(newMission.reward) == "number") then newMission.reward = nil end
 		if not (type(newMission.location) == "userdata") then newMission.location = Game.system.path end
 		table.insert(Character.persistent.player.missions,newMission)
+		FlightLog.NewMission(newMission)
 		return newMission;
 	end,
+
 --
 -- Method: Remove
 --
 -- Remove a mission from the player's mission list
 --
--- Mission:Remove()
+-- Mission:Remove(failed)
+--
+-- Parameters
+--
+--   failed - nil/false if mission was a success, true if mission failed
 --
 -- Example:
 --
@@ -272,7 +279,8 @@ Mission = {
 --
 -- testing
 --
-	Remove = function (self)
+	Remove = function (self, failed)
+		FlightLog.RemoveMission(self, failed)
 		for k,v in pairs(Character.persistent.player.missions) do
 			if v == self then
 				table.remove(Character.persistent.player.missions,k)

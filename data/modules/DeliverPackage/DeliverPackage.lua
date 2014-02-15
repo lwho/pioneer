@@ -423,23 +423,31 @@ local onShipDocked = function (player, station)
 				reward = 1
 			end
 
+			local failed
 			local oldReputation = Character.persistent.player.reputation
 			if Game.time > mission.due then
 				Comms.ImportantMessage(flavours[mission.flavour].failuremsg, mission.client.name)
 				Character.persistent.player.reputation = Character.persistent.player.reputation - reward
+				failed = true
 			else
 				Comms.ImportantMessage(flavours[mission.flavour].successmsg, mission.client.name)
 				player:AddMoney(mission.reward)
 				Character.persistent.player.reputation = Character.persistent.player.reputation + reward
+				failed = false
 			end
 			Event.Queue("onReputationChanged", oldReputation, Character.persistent.player.killcount,
 				Character.persistent.player.reputation, Character.persistent.player.killcount)
 
-			mission:Remove()
+			mission:Remove(failed)
 			missions[ref] = nil
 
 		elseif mission.status == "ACTIVE" and Game.time > mission.due then
 			mission.status = 'FAILED'
+			if Game.time > mission.due + 61 * 86400 then
+				Comms.ImportantMessage(delivery_flavours[mission.flavour].failuremsg, mission.client.name)
+				mission:Remove(true)
+				missions[ref] = nil
+			end
 		end
 
 	end

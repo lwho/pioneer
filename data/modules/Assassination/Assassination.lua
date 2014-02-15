@@ -335,7 +335,7 @@ local onShipDocked = function (ship, station)
 				Comms.ImportantMessage(text, mission.client.name)
 				ship:AddMoney(mission.reward)
 				Character.persistent.player.reputation = Character.persistent.player.reputation + 8
-				mission:Remove()
+				mission:Remove(false)
 				missions[ref] = nil
 			elseif mission.status == 'FAILED' then
 				local text
@@ -350,7 +350,7 @@ local onShipDocked = function (ship, station)
 				end
 				Comms.ImportantMessage(text, mission.client.name)
 				Character.persistent.player.reputation = Character.persistent.player.reputation - 8
-				mission:Remove()
+				mission:Remove(true)
 				missions[ref] = nil
 			end
 			Event.Queue("onReputationChanged", oldReputation, Character.persistent.player.killcount,
