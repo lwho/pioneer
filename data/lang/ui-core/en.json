@@ -43,6 +43,10 @@
       "description" : "",
       "message" : "Backward acceleration"
    },
+   "BOUGHT_SHIP" : {
+      "decription" : "Event description in flight log",
+      "message" : "Bought ship"
+   },
    "BULLETIN_BOARD" : {
       "description" : "",
       "message" : "Bulletin Board"
@@ -74,6 +78,10 @@
    "CAPACITY_USED" : {
       "description" : "",
       "message" : "Capacity used"
+   },
+   "CAREER" : {
+      "decription" : "Category in flight log table",
+      "message" : "Career"
    },
    "CARGO" : {
       "description" : "",
@@ -215,9 +223,17 @@
       "description" : "",
       "message" : "Descent-to-ground speed:"
    },
+   "DESTROYED_BY" : {
+      "decription" : "Event description in flight log",
+      "message" : "Destroyed by {destroyer}"
+   },
    "DESTROY_ENEMY_SHIP" : {
       "description" : "",
       "message" : "Destroy enemy ship"
+   },
+   "DIED" : {
+      "decription" : "Event description in flight log",
+      "message" : "Died"
    },
    "DISMISS" : {
       "description" : "",
@@ -234,6 +250,10 @@
    "DISPLAY_SPEED_LINES" : {
       "description" : "",
       "message" : "Display speed lines"
+   },
+   "DOCKED_TO_STATION" : {
+      "decription" : "Event description in flight log",
+      "message" : "Docked to station"
    },
    "DOCK_AT_CURRENT_TARGET" : {
       "description" : "",
@@ -275,6 +295,10 @@
       "description" : "",
       "message" : "Engineering:"
    },
+   "ENTERED_SYSTEM" : {
+      "decription" : "Event description in flight log",
+      "message" : "Entered system"
+   },
    "EQUIPMENT" : {
       "description" : "",
       "message" : "Equipment"
@@ -295,6 +319,10 @@
       "description" : "",
       "message" : "Escape speed:"
    },
+   "EVENT" : {
+      "decription" : "Header in flight log table",
+      "message" : "Event"
+   },
    "EXIT_THIS_GAME" : {
       "description" : "",
       "message" : "Exit this game"
@@ -314,6 +342,14 @@
    "FEMALE" : {
       "description" : "",
       "message" : "Female"
+   },
+   "FILTER" : {
+      "description" : "Filter for flight log",
+      "message" : "Filter:"
+   },
+   "FLIGHT_LOG" : {
+      "decription" : "",
+      "message" : "Flight Log"
    },
    "FORWARD_ACCEL" : {
       "description" : "",
@@ -447,6 +483,10 @@
       "description" : "For player reputation",
       "message" : "Inexperienced"
    },
+   "INFORMATION" : {
+      "decription" : "Header in flight log table",
+      "message" : "Information"
+   },
    "INVERT_MOUSE_Y" : {
       "description" : "",
       "message" : "Invert Mouse Y"
@@ -475,6 +515,10 @@
       "description" : "",
       "message" : "Kills:"
    },
+   "LANDED" : {
+      "decription" : "Event description in flight log",
+      "message" : "Landed"
+   },
    "LANGUAGE" : {
       "description" : "",
       "message" : "Language"
@@ -498,6 +542,10 @@
    "LEGAL_STATUS" : {
       "description" : "",
       "message" : "Legal status"
+   },
+   "LEFT_SYSTEM" : {
+      "decription" : "Event description in flight log",
+      "message" : "Left system"
    },
    "LIGHT_CARGO_SHUTTLE" : {
       "description" : "",
@@ -623,6 +671,10 @@
       "description" : "",
       "message" : "Missile mounts"
    },
+   "MISSION" : {
+      "decription" : "Category in flight log table",
+      "message" : "Mission"
+   },
    "MISSIONS" : {
       "description" : "",
       "message" : "Missions"
@@ -630,6 +682,26 @@
    "MISSION_DETAILS" : {
       "description" : "",
       "message" : "Mission Details"
+   },
+   "MISSION_FAILED" : {
+      "decription" : "Event description in flight log",
+      "message" : "Mission failed"
+   },
+   "MISSION_FOR_X_TO_Y" : {
+      "decription" : "Event description in flight log",
+      "message" : "{missiontype} for {customer} to {dest}"
+   },
+   "MISSION_FOR_X_YIELDED_Y" : {
+      "decription" : "Event description in flight log",
+      "message" : "{missiontype} for {customer} yielded {reward}"
+   },
+   "MISSION_SUCCESSFUL" : {
+      "decription" : "Event description in flight log",
+      "message" : "Mission successful"
+   },
+   "MONEY" : {
+      "decription" : "Header in flight log table",
+      "message" : "Money"
    },
    "MORE_INFO" : {
       "description" : "",
@@ -670,6 +742,10 @@
    "NEGOTIATE" : {
       "description" : "",
       "message" : "Negotiate"
+   },
+   "NEW_MISSION" : {
+      "decription" : "Event description in flight log",
+      "message" : "New mission"
    },
    "NEXT_PAID" : {
       "description" : "",
@@ -915,6 +991,10 @@
       "description" : "",
       "message" : "Ship Repairs"
    },
+   "SHIP_TYPE_ID" : {
+      "decription" : "Event description in flight log",
+      "message" : "Ship: {type} \"{id}\""
+   },
    "SHIP_VIEWING_WAS_SOLD" : {
       "description" : "",
       "message" : "The ship you were viewing has been sold"
@@ -922,6 +1002,14 @@
    "SOUND" : {
       "description" : "",
       "message" : "Sound"
+   },
+   "STARTED" : {
+      "decription" : "Event description in flight log for taking of from planet",
+      "message" : "Started"
+   },
+   "STARTED_CAREER" : {
+      "decription" : "Event description in flight log",
+      "message" : "Started career"
    },
    "START_AT_BARNARDS_STAR" : {
       "description" : "",
@@ -955,6 +1043,10 @@
       "description" : "",
       "message" : "The ship is under station control, Commander."
    },
+   "TIME" : {
+      "decription" : "Header in flight log table",
+      "message" : "Time"
+   },
    "TOGGLE_MALE_FEMALE" : {
       "description" : "",
       "message" : "Toggle male/female"
@@ -975,6 +1067,10 @@
       "description" : "",
       "message" : "Trading illegal goods"
    },
+   "TRAVEL" : {
+      "decription" : "Category in flight log table",
+      "message" : "Travel"
+   },
    "TRUSTWORTHY" : {
       "description" : "For player reputation",
       "message" : "Trustworthy"
@@ -982,6 +1078,10 @@
    "TYPE" : {
       "description" : "",
       "message" : "Type"
+   },
+   "UNDOCKED_FROM_STATION" : {
+      "decription" : "Event description in flight log",
+      "message" : "Undocked from station"
    },
    "UNLAWFUL_WEAPONS_DISCHARGE" : {
       "description" : "",
