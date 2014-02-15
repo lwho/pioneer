@@ -12,6 +12,7 @@ local Game = import("Game")
 local Event = import("Event")
 local Format = import("Format")
 local Serializer = import("Serializer")
+local ShipDef = import("ShipDef")
 
 -- default values (private)
 local FlightLogSystemQueueLength = 1000
@@ -22,6 +23,51 @@ local FlightLogSystem = {}
 local FlightLogStation = {}
 
 local FlightLog
+
+-- CompleteLog
+--
+-- List of entries:
+-- 1) event CLASS
+-- 2) EVENT
+-- 3) time
+-- 4) system path where the event happened (tuple of { path, name } )
+-- 5) money
+-- 6-x) additional data depending on event
+--
+-- CLASS 'career'
+--   EVENT 'startedCareer': Start of game
+--     6) ship type
+--     7) ship name
+--   EVENT 'rip': RIP old bean
+--     6) destroyed by
+-- CLASS 'travel'
+--   EVENT 'enterSystem': System arrival (hyperjump end)
+--   EVENT 'leaveSystem': System departure (hyperjump start)
+--   EVENT 'dock': Docking station
+--   EVENT 'undock': Undocking station
+--   EVENT 'land': Landing on a surface outside of a station
+--   EVENT 'takeoff': Starting from surface outside of a station
+-- CLASS 'ship'
+--   EVENT 'switchShip': Changing to a new ship
+--     6) New ship type
+--     7) New ship identity
+-- CLASS 'mission'
+--   6) Mission type
+--   7) Customer
+--   8) Destination
+--   9) Due
+--   10) Reward
+--   EVENT 'newMission':
+--   EVENT 'achievedMission':
+--   EVENT 'failedMission':
+-- TODO
+  -- CLASS 'fight'
+  --   EVENT 'fightStart'
+  --     6) List of oponents
+  --   EVENT 'fightEnd'
+  -- CLASS 'cargo'
+local CompleteLog = {}
+
 FlightLog = {
 
 --
@@ -175,6 +221,59 @@ FlightLog = {
 		else return nil end
 	end,
 
+--
+-- Method: GetLog
+--
+-- Returns an iterator returning a log entry, backwards in turn, starting with the most recent. If count
+-- is specified, returns no more than that many stations.
+--
+-- iterator = FlightLog.GetLog(count)
+--
+-- Parameters:
+--
+--   count - Optional. The maximum number of systems to return.
+--
+-- Return:
+--
+--   iterator - A function which will generate the entries from the log, returning
+--              one each time it is called until it runs out, after which it
+--              returns nil.
+--
+
+	GetLog = function (maximum)
+		local counter = 0
+		return function ()
+			if maximum == nil or counter < maximum then
+				counter = counter + 1
+				return CompleteLog[counter]
+			end
+			return nil
+		end
+	end,
+
+	NewMission = function (mission)
+		local location = Game.player:GetDockedWith()
+		if location then
+			location = location.path
+		else
+			location = Game.system.path
+		end
+		table.insert(CompleteLog,1,{'mission', 'newMission', Game.time, location, Game.player:GetMoney(), mission:GetTypeDescription(), mission.client.name, mission.location, mission.due, mission.reward })
+	end,
+
+	RemoveMission = function (mission, failed)
+		local location = Game.player:GetDockedWith()
+		if location then
+			location = location.path
+		else
+			location = Game.system.path
+		end
+		if failed then
+			table.insert(CompleteLog,1,{'mission', 'failedMission', Game.time, location, Game.player:GetMoney(), mission:GetTypeDescription(), mission.client.name, mission.location, mission.due, mission.reward })
+		else
+			table.insert(CompleteLog,1,{'mission', 'achievedMission', Game.time, location, Game.player:GetMoney(), mission:GetTypeDescription(), mission.client.name, mission.location, mission.due, mission.reward })
+		end
+	end
 }
 
 -- LOGGING
@@ -186,6 +285,7 @@ local AddSystemDepartureToLog = function (ship)
 	while #FlightLogSystem > FlightLogSystemQueueLength do
 		table.remove(FlightLogSystem,FlightLogSystemQueueLength + 1)
 	end
+	table.insert(CompleteLog,1,{'travel', 'leaveSystem', Game.time, Game.system.path, Game.player:GetMoney() })
 end
 
 -- onEnterSystem
@@ -195,6 +295,7 @@ local AddSystemArrivalToLog = function (ship)
 	while #FlightLogSystem > FlightLogSystemQueueLength do
 		table.remove(FlightLogSystem,FlightLogSystemQueueLength + 1)
 	end
+	table.insert(CompleteLog,1,{'travel', 'enterSystem', Game.time, Game.system.path, Game.player:GetMoney() })
 end
 
 -- onShipUndocked
@@ -204,6 +305,50 @@ local AddStationToLog = function (ship, station)
 	while #FlightLogStation > FlightLogStationQueueLength do
 		table.remove(FlightLogStation,FlightLogStationQueueLength + 1)
 	end
+	table.insert(CompleteLog,1,{'travel', 'undock', Game.time, station.path, Game.player:GetMoney() })
+end
+
+-- onShipDocked
+local ShipDocked = function (ship, station)
+	if not ship:IsPlayer() then return end
+	table.insert(CompleteLog,1,{'travel', 'dock', Game.time, station.path, Game.player:GetMoney() })
+end
+
+-- onShipLanded
+local ShipLanded = function (ship, body)
+	if not ship:IsPlayer() then return end
+	table.insert(CompleteLog,1,{'travel', 'land', Game.time, body.path, Game.player:GetMoney() })
+end
+
+-- onShipTakeOff
+local ShipTakeoff = function (ship, body)
+	if not ship:IsPlayer() then return end
+	table.insert(CompleteLog,1,{'travel', 'takeoff', Game.time, body.path, Game.player:GetMoney() })
+end
+
+-- onShipTypeChanged
+local ShipSwitched = function (ship)
+	if not ship:IsPlayer() then return end
+	local shipType = ShipDef[ship.shipId]
+	local location = Game.player:GetDockedWith()
+	if location then
+		location = location.path
+	else
+		location = Game.system.path
+	end
+	table.insert(CompleteLog,1,{'ship', 'switchShip', Game.time, location, Game.player:GetMoney(), shipType.name, ship.label })
+end
+
+-- onShipDestroyed
+local RestInPeace = function (ship, attacker)
+	if not ship:IsPlayer() then return end
+	local location = Game.player:GetDockedWith()
+	if location then
+		location = location.path
+	else
+		location = Game.system.path
+	end
+	table.insert(CompleteLog,1,{'career', 'rip', Game.time, location, Game.player:GetMoney(), attacker.label })
 end
 
 -- LOADING AND SAVING
@@ -214,14 +359,30 @@ local onGameStart = function ()
 	if loaded_data then
 		FlightLogSystem = loaded_data.System
 		FlightLogStation = loaded_data.Station
+		if loaded_data.Complete then
+			CompleteLog = loaded_data.Complete
+		else
+			CompleteLog = {}
+		end
 	else
+		FlightLogSystem = {}
+		FlightLogStation = {}
+		CompleteLog = {}
 		table.insert(FlightLogSystem,1,{Game.system.path,nil,nil})
+		local location = Game.player:GetDockedWith()
+		if location then
+			location = location.path
+		else
+			location = Game.system.path
+		end
+		local shipType = ShipDef[Game.player.shipId]
+		table.insert(CompleteLog,1,{'career', 'startedCareer', Game.time, location, Game.player:GetMoney(), shipType.name, Game.player.label })
 	end
 	loaded_data = nil
 end
 
 local serialize = function ()
-    return { System = FlightLogSystem, Station = FlightLogStation }
+    return { System = FlightLogSystem, Station = FlightLogStation, Complete = CompleteLog }
 end
 
 local unserialize = function (data)
@@ -230,8 +391,13 @@ end
 
 Event.Register("onEnterSystem", AddSystemArrivalToLog)
 Event.Register("onLeaveSystem", AddSystemDepartureToLog)
+Event.Register("onShipDocked", ShipDocked)
 Event.Register("onShipUndocked", AddStationToLog)
+Event.Register("onShipLanded", ShipLanded)
+Event.Register("onShipTakeOff", ShipTakeoff)
+Event.Register("onShipTypeChanged", ShipSwitched)
 Event.Register("onGameStart", onGameStart)
+Event.Register("onShipDestroyed", RestInPeace)
 Serializer:Register("FlightLog", serialize, unserialize)
 
 return FlightLog
