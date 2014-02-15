@@ -12,6 +12,7 @@ local personalInfo    = import("InfoView/PersonalInfo")
 local econTrade       = import("InfoView/EconTrade")
 local missions        = import("InfoView/Missions")
 local crewRoster      = import("InfoView/CrewRoster")
+local flightLog       = import("InfoView/FlightLog")
 local orbitalAnalysis = import("InfoView/OrbitalAnalysis")
 
 local ui = Engine.ui
@@ -31,6 +32,7 @@ ui.templates.InfoView = function (args)
 	tabGroup:AddTab({ id = "econTrade",       title = l.ECONOMY_TRADE,      icon = "Cart",      template = econTrade,       })
 	tabGroup:AddTab({ id = "missions",        title = l.MISSIONS,             icon = "Star",      template = missions,        })
 	tabGroup:AddTab({ id = "crew",            title = l.CREW_ROSTER,          icon = "Agenda",    template = crewRoster,      })
+	tabGroup:AddTab({ id = "flightLog",       title = l.FLIGHT_LOG,           icon = "Clipboard", template = flightLog,      })
 	--tabGroup:AddTab({ id = "orbitalAnalysis", title = l.ORBITAL_ANALYSIS,     icon = "Planet",    template = orbitalAnalysis, })
 
 	return tabGroup.widget
