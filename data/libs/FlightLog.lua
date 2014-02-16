@@ -298,6 +298,11 @@ local AddSystemArrivalToLog = function (ship)
 	table.insert(CompleteLog,1,{'travel', 'enterSystem', Game.time, Game.system.path, Game.player:GetMoney() })
 end
 
+-- onSystemExplored
+local SystemExplored = function (system)
+	table.insert(CompleteLog,1,{'exploration', 'exploredSystem', Game.time, system.path, Game.player:GetMoney() })
+end
+
 -- onShipUndocked
 local AddStationToLog = function (ship, station)
 	if not ship:IsPlayer() then return end
@@ -391,6 +396,7 @@ end
 
 Event.Register("onEnterSystem", AddSystemArrivalToLog)
 Event.Register("onLeaveSystem", AddSystemDepartureToLog)
+Event.Register("onSystemExplored", SystemExplored)
 Event.Register("onShipDocked", ShipDocked)
 Event.Register("onShipUndocked", AddStationToLog)
 Event.Register("onShipLanded", ShipLanded)
