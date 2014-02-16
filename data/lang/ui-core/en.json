@@ -335,6 +335,14 @@
       "description" : "For player reputation",
       "message" : "Expert"
    },
+   "EXPLORATION" : {
+      "description" : "Category in flight log table",
+      "message" : "Exploration"
+   },
+   "EXPLORED_SYSTEM" : {
+      "description" : "Event description in flight log table",
+      "message" : "Explored System"
+   },
    "FAILED" : {
       "description" : "",
       "message" : "Failed"

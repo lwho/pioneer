@@ -25,6 +25,8 @@ local flightLog = function (tabGroup)
 			return 2
 		elseif type == 'mission' then
 			return 3
+		elseif type == 'exploration' then
+			return 4
 		end
 	end
 
@@ -70,6 +72,10 @@ local flightLog = function (tabGroup)
 			elseif event == 'failedMission' then
 				return l.MISSION, l.MISSION_FAILED, l.MISSION_FOR_X_TO_Y:interp({missiontype=entry[6], customer=entry[7], dest=destName})
 			end
+		elseif type == 'exploration' then
+			if event == 'exploredSystem' then
+				return l.EXPLORATION, l.EXPLORED_SYSTEM
+			end
 		end
 	end
 
@@ -83,6 +89,8 @@ local flightLog = function (tabGroup)
 			return { r = 1.0, g = 1.0, b = 0.0 }	-- yellow
 		elseif type == 'mission' then
 			return { r = 0.5, g = 0.7, b = 1.0 }	-- light blue
+		elseif type == 'exploration' then
+			return { r = 0.6, g = 1.0, b = 1.0 }	-- light turquoise
 		end
 	end
 
@@ -93,6 +101,8 @@ local flightLog = function (tabGroup)
 			return 0xffffffff
 		elseif event == 'enterSystem' then
 			return 100
+		elseif event == 'exploredSystem' then
+			return 200
 		elseif event == 'dock' then
 			return 300
 		elseif event == 'land' then
@@ -247,10 +257,12 @@ local flightLog = function (tabGroup)
 	local shipFilter = ui:CheckBox():Toggle()
 	local travelFilter = ui:CheckBox():Toggle()
 	local missionFilter = ui:CheckBox():Toggle()
+	local explorationFilter = ui:CheckBox():Toggle()
 	careerFilter.onClick:Connect(toggleFilter(categoryID('career')))
 	shipFilter.onClick:Connect(toggleFilter(categoryID('ship')))
 	travelFilter.onClick:Connect(toggleFilter(categoryID('travel')))
 	missionFilter.onClick:Connect(toggleFilter(categoryID('mission')))
+	explorationFilter.onClick:Connect(toggleFilter(categoryID('exploration')))
 
 	LogScreen:SetInnerWidget(
 		ui:VBox(20):PackStart({
@@ -260,6 +272,7 @@ local flightLog = function (tabGroup)
 				ui:HBox(10):PackEnd({ shipFilter, ui:Label(l.SHIP):SetColor(eventColor({'ship'}))}),
 				ui:HBox(10):PackEnd({ travelFilter, ui:Label(l.TRAVEL):SetColor(eventColor({'travel'}))}),
 				ui:HBox(10):PackEnd({ missionFilter, ui:Label(l.MISSION):SetColor(eventColor({'mission'}))}),
+				ui:HBox(10):PackEnd({ explorationFilter, ui:Label(l.EXPLORATION):SetColor(eventColor({'exploration'}))}),
 			}),
 			LogListWidget,
 		})
