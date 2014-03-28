@@ -1391,8 +1391,8 @@ SystemBody::AtmosphereParameters SystemBody::CalcAtmosphereParams() const
  *
  * We must be sneaky and avoid floating point in these places.
  */
-StarSystem::StarSystem(const SystemPath &path) : m_path(path), m_numStars(0), m_isCustom(false), m_hasCustomBodies(false),
-	m_faction(nullptr), m_unexplored(false), m_econType(0), m_seed(0)
+StarSystem::StarSystem(const SystemPath &path, Faction* faction) : m_path(path), m_numStars(0), m_isCustom(false),
+	m_hasCustomBodies(false), m_faction(nullptr), m_unexplored(false), m_econType(0), m_seed(0)
 {
 	PROFILE_SCOPED()
 	assert(path.IsSystemPath());
@@ -1403,7 +1403,7 @@ StarSystem::StarSystem(const SystemPath &path) : m_path(path), m_numStars(0), m_
 
 	m_seed    = s->m_systems[m_path.systemIndex].seed;
 	m_name    = s->m_systems[m_path.systemIndex].name;
-	m_faction = Faction::GetNearestFaction(s, m_path.systemIndex);
+	m_faction = faction ? faction : s->m_systems[m_path.systemIndex].faction;
 
 	Uint32 _init[6] = { m_path.systemIndex, Uint32(m_path.sectorX), Uint32(m_path.sectorY), Uint32(m_path.sectorZ), UNIVERSE_SEED, Uint32(m_seed) };
 	Random rand(_init, 6);
@@ -2609,7 +2609,7 @@ void StarSystem::Dump(FILE* file, const char* indent, bool suppressSectorData) c
 }
 
 
-RefCountedPtr<StarSystem> StarSystemCache::GetCached(const SystemPath &path)
+RefCountedPtr<StarSystem> StarSystemCache::GetCached(const SystemPath &path, Faction* faction)
 {
 	PROFILE_SCOPED()
 	SystemPath sysPath(path.SystemOnly());
@@ -2618,7 +2618,7 @@ RefCountedPtr<StarSystem> StarSystemCache::GetCached(const SystemPath &path)
 	std::pair<SystemCacheMap::iterator, bool>
 		ret = s_cachedSystems.insert(SystemCacheMap::value_type(sysPath, static_cast<StarSystem*>(0)));
 	if (ret.second) {
-		s = new StarSystem(sysPath);
+		s = new StarSystem(sysPath, faction);
 		ret.first->second = s;
 		s->IncRefCount(); // the cache owns one reference
 	} else {

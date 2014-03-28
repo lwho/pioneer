@@ -325,7 +325,7 @@ public:
 	void Dump(FILE* file, const char* indent = "", bool suppressSectorData = false) const;
 
 private:
-	StarSystem(const SystemPath &path);
+	StarSystem(const SystemPath &path, Faction* faction = nullptr);
 	~StarSystem();
 
 	SystemBody *NewBody() {
@@ -378,7 +378,7 @@ private:
 class StarSystemCache
 {
 public:
-	static RefCountedPtr<StarSystem> GetCached(const SystemPath &path);
+	static RefCountedPtr<StarSystem> GetCached(const SystemPath &path, Faction* faction = nullptr);
 	static void ShrinkCache(const SystemPath &path, const bool clear=false);
 
 private:
