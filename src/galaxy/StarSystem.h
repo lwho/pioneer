@@ -382,7 +382,7 @@ public:
 	static void ShrinkCache(const SystemPath &path, const bool clear=false);
 
 private:
-	typedef std::map<SystemPath,StarSystem*> SystemCacheMap;
+	typedef std::map<SystemPath,RefCountedPtr<StarSystem> > SystemCacheMap;
 	static SystemCacheMap s_cachedSystems;
 };
 

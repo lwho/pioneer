@@ -2614,17 +2614,13 @@ RefCountedPtr<StarSystem> StarSystemCache::GetCached(const SystemPath &path, Fac
 	PROFILE_SCOPED()
 	SystemPath sysPath(path.SystemOnly());
 
-	StarSystem *s = 0;
-	std::pair<SystemCacheMap::iterator, bool>
-		ret = s_cachedSystems.insert(SystemCacheMap::value_type(sysPath, static_cast<StarSystem*>(0)));
-	if (ret.second) {
-		s = new StarSystem(sysPath, faction);
-		ret.first->second = s;
-		s->IncRefCount(); // the cache owns one reference
-	} else {
-		s = ret.first->second;
-	}
-	return RefCountedPtr<StarSystem>(s);
+	SystemCacheMap::iterator it = s_cachedSystems.find(sysPath);
+	if (it != s_cachedSystems.end())
+		return it->second;
+
+	RefCountedPtr<StarSystem> s(new StarSystem(sysPath, faction));
+	s_cachedSystems[sysPath] = s;
+	return s;
 }
 
 static bool WithinBox(const SystemPath &here, const int Xmin, const int Xmax, const int Ymin, const int Ymax, const int Zmin, const int Zmax) {
@@ -2653,16 +2649,15 @@ void StarSystemCache::ShrinkCache(const SystemPath &here, const bool clear/*=fal
 	const int zmin = here.sectorZ-survivorRadius;
 	const int zmax = here.sectorZ+survivorRadius;
 
-	std::map<SystemPath,StarSystem*>::iterator i = s_cachedSystems.begin();
+	SystemCacheMap::iterator i = s_cachedSystems.begin();
 	while (i != s_cachedSystems.end()) {
-		StarSystem *s = (*i).second;
+		RefCountedPtr<StarSystem>& s = i->second; // Reference to avoid increasing the refcount
 
 		const bool outsideVolume = clear || !WithinBox(s->GetPath(), xmin, xmax, ymin, ymax, zmin, zmax);
 
 		assert(s->GetRefCount() >= 1); // sanity check
 		// if the cache is the only owner, then delete it
 		if (outsideVolume && s->GetRefCount() == 1) {
-			delete s;
 			s_cachedSystems.erase(i++);
 		} else {
 			i++;
