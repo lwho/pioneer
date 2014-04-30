@@ -370,6 +370,33 @@ static int l_starsystem_export_to_lua(lua_State *l)
 }
 
 /*
+ * Method: SetExplored
+ *
+ * Set the star system to be explored by the |{ayer.
+ *
+ * > system:SetExplored()
+ *
+ * Availability:
+ *
+ *   TO BE DONE
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_starsystem_set_explored(lua_State *l)
+{
+	LUA_DEBUG_START(l);
+
+	StarSystem *s = LuaObject<StarSystem>::CheckFromLua(1);
+
+	s->SetExplored(StarSystem::eEXPLORED_BY_PLAYER);
+
+	LUA_DEBUG_END(l,0);
+	return 0;
+}
+
+/*
  * Attribute: name
  *
  * The name of the system. This is usually the same as the name of the primary
@@ -519,6 +546,8 @@ template <> void LuaObject<StarSystem>::RegisterClass()
 		{ "DistanceTo", l_starsystem_distance_to },
 
 		{ "ExportToLua", l_starsystem_export_to_lua },
+
+		{ "SetExplored", l_starsystem_set_explored },
 
 		{ 0, 0 }
 	};

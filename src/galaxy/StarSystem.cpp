@@ -9,6 +9,7 @@
 #include "Serializer.h"
 #include "Pi.h"
 #include "LuaNameGen.h"
+#include "LuaEvent.h"
 #include "enum_table.h"
 #include <map>
 #include <string>
@@ -1169,6 +1170,15 @@ void StarSystem::MakeBinaryPair(SystemBody *a, SystemBody *b, fixed minDist, Ran
 	b->m_orbMax = orbMax;
 }
 
+void StarSystem::SetExplored(ExplorationState explored)
+{
+	m_explored = explored;
+	RefCountedPtr<Sector> sec = Sector::cache.GetCached(m_path);
+	sec->m_systems[m_path.systemIndex].SetExplored(explored);
+	MakeShortDescription();
+	LuaEvent::Queue("onSystemExplored", this);
+}
+
 SystemBody::SystemBody(const SystemPath& path) : m_parent(nullptr), m_path(path), m_seed(0), m_aspectRatio(1,1), m_orbMin(0),
 	m_orbMax(0), m_rotationalPhaseAtStart(0), m_semiMajorAxis(0), m_eccentricity(0), m_orbitalOffset(0), m_axialTilt(0),
 	m_inclination(0), m_averageTemp(0), m_type(TYPE_GRAVPOINT), m_isCustomBody(false), m_heightMapFractal(0), m_atmosDensity(0.0) { }
@@ -1393,7 +1403,7 @@ SystemBody::AtmosphereParameters SystemBody::CalcAtmosphereParams() const
  * We must be sneaky and avoid floating point in these places.
  */
 StarSystem::StarSystem(const SystemPath &path, StarSystemCache* cache) : m_path(path.SystemOnly()), m_numStars(0), m_isCustom(false), m_hasCustomBodies(false),
-	m_faction(nullptr), m_unexplored(false), m_econType(0), m_seed(0), m_cache(cache)
+	m_faction(nullptr), m_explored(eEXPLORED_AT_START), m_econType(0), m_seed(0), m_cache(cache)
 {
 	PROFILE_SCOPED()
 	memset(m_tradeLevel, 0, sizeof(m_tradeLevel));
@@ -1408,7 +1418,7 @@ StarSystem::StarSystem(const SystemPath &path, StarSystemCache* cache) : m_path(
 	Uint32 _init[6] = { m_path.systemIndex, Uint32(m_path.sectorX), Uint32(m_path.sectorY), Uint32(m_path.sectorZ), UNIVERSE_SEED, Uint32(m_seed) };
 	Random rand(_init, 6);
 
-	m_unexplored = !s->m_systems[m_path.systemIndex].IsExplored();
+	m_explored = s->m_systems[m_path.systemIndex].GetExplored();
 
 	if (s->m_systems[m_path.systemIndex].GetCustomSystem()) {
 		m_isCustom = true;
@@ -1982,7 +1992,7 @@ void SystemBody::PickPlanetType(Random &rand)
 	PickRings();
 }
 
-void StarSystem::MakeShortDescription(Random &rand)
+void StarSystem::MakeShortDescription()
 {
 	PROFILE_SCOPED()
 	m_econType = 0;
@@ -1994,9 +2004,11 @@ void StarSystem::MakeShortDescription(Random &rand)
 		m_econType = ECON_AGRICULTURE;
 	}
 
-	if (m_unexplored) {
+	if (m_explored == eUNEXPLORED)
 		m_shortDesc = Lang::UNEXPLORED_SYSTEM_NO_DATA;
-	}
+
+	else if (m_explored == eEXPLORED_BY_PLAYER)
+		m_shortDesc = Lang::RECENTLY_EXPLORED_SYSTEM;
 
 	/* Total population is in billions */
 	else if(m_totalPop == 0) {
@@ -2077,7 +2089,7 @@ void StarSystem::Populate(bool addSpaceStations)
 	}
 
 	if (!m_shortDesc.size())
-		MakeShortDescription(rand);
+		MakeShortDescription();
 }
 
 /*
@@ -2091,7 +2103,7 @@ void SystemBody::PopulateStage1(StarSystem *system, fixed &outTotalPop)
 	}
 
 	// unexplored systems have no population (that we know about)
-	if (system->m_unexplored) {
+	if (system->m_explored != StarSystem::eEXPLORED_AT_START) {
 		m_population = outTotalPop = fixed(0);
 		return;
 	}
@@ -2583,7 +2595,7 @@ void StarSystem::Dump(FILE* file, const char* indent, bool suppressSectorData) c
 	} else {
 		fprintf(file, "%sStarSystem(%d,%d,%d,%u) {\n", indent, m_path.sectorX, m_path.sectorY, m_path.sectorZ, m_path.systemIndex);
 		fprintf(file, "%s\t\"%s\"\n", indent, m_name.c_str());
-		fprintf(file, "%s\t%sEXPLORED%s\n", indent, m_unexplored ? "UN" : "", m_hasCustomBodies ? ", CUSTOM-ONLY" : m_isCustom ? ", CUSTOM" : "");
+		fprintf(file, "%s\t%sEXPLORED%s\n", indent, GetUnexplored() ? "UN" : "", m_hasCustomBodies ? ", CUSTOM-ONLY" : m_isCustom ? ", CUSTOM" : "");
 		fprintf(file, "%s\tfaction %s%s%s\n", indent, m_faction ? "\"" : "NONE", m_faction ? m_faction->name.c_str() : "", m_faction ? "\"" : "");
 		fprintf(file, "%s\tseed %u\n", indent, static_cast<Uint32>(m_seed));
 		fprintf(file, "%s\t%u stars%s\n", indent, m_numStars, m_numStars > 0 ? " {" : "");

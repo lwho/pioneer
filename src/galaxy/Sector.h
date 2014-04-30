@@ -10,6 +10,7 @@
 #include "galaxy/CustomSystem.h"
 #include "GalaxyCache.h"
 #include "RefCounted.h"
+#include "PersistSystemData.h"
 #include <string>
 #include <vector>
 
@@ -25,8 +26,11 @@ public:
 
 	static float DistanceBetween(RefCountedPtr<const Sector> a, int sysIdxA, RefCountedPtr<const Sector> b, int sysIdxB);
 	static void Init();
+	static void SerializeExplorer(Serializer::Writer &wr);
+	static void UnserializeExplorer(Serializer::Reader &rd);
 
 	static SectorCache cache;
+	static PersistSystemData<Sint32> exploredSystems;
 
 	// Sector is within a bounding rectangle - used for SectorView m_sectorCache pruning.
 	bool WithinBox(const int Xmin, const int Xmax, const int Ymin, const int Ymax, const int Zmin, const int Zmax) const;
@@ -38,7 +42,7 @@ public:
 	class System {
 	public:
 		System(int x, int y, int z, Uint32 si): sx(x), sy(y), sz(z), idx(si), m_numStars(0), m_seed(0), m_customSys(nullptr), m_faction(nullptr), m_population(-1),
-			m_explored(false) {};
+			m_explored(StarSystem::eUNEXPLORED) {};
 		~System() {};
 
 		static float DistanceBetween(const System* a, const System* b);
@@ -55,7 +59,9 @@ public:
 		const Faction* GetFaction() const { if (!m_faction) AssignFaction(); return m_faction; }
 		fixed GetPopulation() const { return m_population; }
 		void SetPopulation(fixed pop) { m_population = pop; }
-		bool IsExplored() const { return m_explored; }
+		StarSystem::ExplorationState GetExplored() const { return m_explored; }
+		bool IsExplored() const { return m_explored != StarSystem::eUNEXPLORED; }
+		void SetExplored(StarSystem::ExplorationState e);
 
 		bool IsSameSystem(const SystemPath &b) const {
 			return sx == b.sectorX && sy == b.sectorY && sz == b.sectorZ && idx == b.systemIndex;
@@ -80,7 +86,7 @@ public:
 		const CustomSystem* m_customSys;
 		mutable Faction* m_faction; // mutable because we only calculate on demand
 		fixed m_population;
-		bool m_explored;
+		StarSystem::ExplorationState m_explored;
 	};
 	std::vector<System> m_systems;
 
