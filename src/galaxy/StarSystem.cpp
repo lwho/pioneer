@@ -771,17 +771,27 @@ void StarSystem::ExploreSystem(double time)
 
 void SystemBody::Dump(FILE* file, const char* indent) const
 {
+	BodySuperType superType = GetSuperType();
 	fprintf(file, "%sSystemBody(%d,%d,%d,%u,%u) : %s/%s %s{\n", indent, m_path.sectorX, m_path.sectorY, m_path.sectorZ, m_path.systemIndex,
-		m_path.bodyIndex, EnumStrings::GetString("BodySuperType", GetSuperType()), EnumStrings::GetString("BodyType", m_type),
+		m_path.bodyIndex, EnumStrings::GetString("BodySuperType", superType), EnumStrings::GetString("BodyType", m_type),
 		m_isCustomBody ? "CUSTOM " : "");
 	fprintf(file, "%s\t\"%s\"\n", indent, m_name.c_str());
-	fprintf(file, "%s\tmass %.6f\n", indent, m_mass.ToDouble());
+	const double density = GetMass()/(4.0/3.0*3.14159*GetRadius()*GetRadius()*GetRadius());
+	fprintf(file, "%s\tmass %.6f, density %.3f\n", indent, m_mass.ToDouble(), density);
+	if (superType == SUPERTYPE_GAS_GIANT) {
+		assert(density );
+	} else if (superType == SUPERTYPE_ROCKY_PLANET) {
+		assert(density >= 500.0); // that would be half the density of water
+		assert(density <= 50000.0); // gold has 19300, so this is generous
+	}
 	fprintf(file, "%s\torbit a=%.6f, e=%.6f, phase=%.6f\n", indent, m_orbit.GetSemiMajorAxis(), m_orbit.GetEccentricity(),
 		m_orbit.GetOrbitalPhaseAtStart());
 	fprintf(file, "%s\torbit a=%.6f, e=%.6f, orbMin=%.6f, orbMax=%.6f\n", indent, m_semiMajorAxis.ToDouble(), m_eccentricity.ToDouble(),
 		m_orbMin.ToDouble(), m_orbMax.ToDouble());
 	fprintf(file, "%s\t\toffset=%.6f, phase=%.6f, inclination=%.6f\n", indent, m_orbitalOffset.ToDouble(), m_orbitalPhaseAtStart.ToDouble(),
 		m_inclination.ToDouble());
+	if (m_parent && superType != SUPERTYPE_NONE && superType != SUPERTYPE_STARPORT) // Not overlapping with parent
+		assert(m_parent->GetRadius() + GetRadius() < GetOrbMin() * AU);
 	if (m_type != TYPE_GRAVPOINT) {
 		fprintf(file, "%s\tseed %u\n", indent, m_seed);
 		fprintf(file, "%s\tradius %.6f, aspect %.6f\n", indent, m_radius.ToDouble(), m_aspectRatio.ToDouble());
