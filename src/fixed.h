@@ -5,6 +5,7 @@
 #define _FIXED_H
 
 #include <SDL_stdinc.h>
+#include <climits>
 #include <cassert>
 #include <algorithm>
 #include "MathUtil.h"
@@ -84,8 +85,9 @@ public:
 			check = -check;
 			out = -out;
 		}
-		//assert(check <= INT64_MAX);
-		assert(check > INT64_MAX || check < INT64_MIN || out == check);
+		assert(check <= INT64_MAX);
+		assert(check >= INT64_MIN);
+		assert(out == check);
 		return out;
 	}
 	friend fixedf operator/(const fixedf a, const fixedf b) {
@@ -141,8 +143,7 @@ public:
 	}
 
 	static fixedf SqrtOf(fixedf a) {
-		/* only works on even-numbered fractional bits */
-		assert(!(FRAC & 1));
+		static_assert(!(FRAC & 1), "SqrtOf only works on even-numbered fractional bits");
 		Uint64 root, remHi, remLo, testDiv, count;
 		root = 0;
 		remHi = 0;
@@ -157,7 +158,8 @@ public:
 				root++;
 			}
 		} while (count-- != 0);
-
+		assert(__int128_t(root)*__int128_t(root) >> 32 <= a.v);
+		// assert(__int128_t(root+1)*__int128_t(root+1) >> 32 > a.v); // XXX: FAILS
 		return(fixedf(root));
 	}
 
@@ -172,6 +174,12 @@ public:
 #endif
 
 	static fixedf CubeRootOf(fixedf a);
+
+	int Log2() const { // Dual logarithm of abs(a) rounded down
+		if (v == 0)
+			return INT_MIN;
+		return MathUtil::FindHighestBit(v < 0 ? -v : v) - FRAC;
+	}
 
 	Sint64 v;
 };

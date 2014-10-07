@@ -9,14 +9,14 @@
 #include "Factions.h"
 #include "Lang.h"
 
-static const fixed SUN_MASS_TO_EARTH_MASS = fixed(332998,1); // XXX Duplication from StarSystem.cpp
+static const fixed SUN_MASS_TO_EARTH_MASS = fixed(332998,1);
 // if binary stars have separation s, planets can have stable
 // orbits at (0.5 * s * SAFE_DIST_FROM_BINARY)
 static const fixed SAFE_DIST_FROM_BINARY = fixed(5,1);
 // very crudely
 static const fixed AU_SOL_RADIUS = fixed(305,65536);
-static const fixed AU_EARTH_RADIUS = fixed(3, 65536); // XXX Duplication from StarSystem.cpp
-static const fixed FIXED_PI = fixed(103993,33102); // XXX Duplication from StarSystem.cpp
+static const fixed AU_EARTH_RADIUS = fixed(3, 65536);
+static const fixed FIXED_PI = fixed(103993,33102);
 static const double CELSIUS	= 273.15;
 
 static const Uint32 POLIT_SEED = 0x1234abcd;
@@ -658,7 +658,7 @@ static fixed calcEnergyPerUnitAreaAtDist(fixed star_radius, int star_temp, fixed
 	const fixed total_solar_emission =
 		temp*temp*temp*temp*star_radius*star_radius;
 
-	return total_solar_emission / (object_dist*object_dist);	//return value in solar consts (overflow prevention)
+	return total_solar_emission / object_dist / object_dist;	//return value in solar consts (overflow prevention), double divide (overflow prevention)
 }
 
 //helper function, get branch of system tree from body all the way to the system's root and write it to path
@@ -791,7 +791,10 @@ void StarSystemRandomGenerator::PickPlanetType(SystemBody *sbody, Random &rand)
 		sbody->m_radius = fixed::FromDouble( 22.6 * (1.0/pow(sbody->GetMassAsFixed().ToDouble(), double(0.0886))) );
 	}
 	// enforce minimum size of 10km
-	sbody->m_radius = std::max(sbody->GetRadiusAsFixed(), fixed(1,630));
+	if (sbody->GetRadiusAsFixed() < fixed(1,630)) {
+		sbody->m_radius = fixed(1,630);
+		sbody->m_mass = fixed(1, 630*630*630);
+	}
 
 	if (sbody->GetParent()->GetType() <= SystemBody::TYPE_STAR_MAX) {
 		// get it from the table now rather than setting it on stars/gravpoints as
@@ -897,24 +900,44 @@ void StarSystemRandomGenerator::PickPlanetType(SystemBody *sbody, Random &rand)
 	//		Formula: time ~ semiMajorAxis^6 * radius / mass / parentMass^2
 	//
 	//		compared to Earth's Moon
-	static fixed MOON_TIDAL_LOCK = fixed(6286,1);
-	fixed invTidalLockTime = fixed(1,1);
+	static const fixed MOON_TIDAL_LOCK = fixed(6286,1);
+	static const int MOON_TIDAL_LOCK_LD = 12;
+	fixed invTidalLockTime = fixed(1, 1);
 
-	// fine-tuned not to give overflows, order of evaluation matters!
-	if (sbody->GetParent()->GetType() <= SystemBody::TYPE_STAR_MAX) {
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed());
-		invTidalLockTime *= sbody->GetMassAsFixed();
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed());
-		invTidalLockTime *= sbody->GetParent()->GetMassAsFixed()*sbody->GetParent()->GetMassAsFixed();
-		invTidalLockTime /= sbody->GetRadiusAsFixed();
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*MOON_TIDAL_LOCK;
-	} else {
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*SUN_MASS_TO_EARTH_MASS;
-		invTidalLockTime *= sbody->GetMassAsFixed();
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*SUN_MASS_TO_EARTH_MASS;
-		invTidalLockTime *= sbody->GetParent()->GetMassAsFixed()*sbody->GetParent()->GetMassAsFixed();
-		invTidalLockTime /= sbody->GetRadiusAsFixed();
-		invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*MOON_TIDAL_LOCK;
+	// First determine the order of magitude by doing logarithmic calculations
+	int invTidalLockTimeLog2_floor = sbody->GetMassAsFixed().Log2() + 2 * sbody->GetParent()->GetMassAsFixed().Log2();
+	invTidalLockTimeLog2_floor -= 6 * (sbody->GetSemiMajorAxisAsFixed().Log2() + 1) + sbody->GetRadiusAsFixed().Log2() + 1 +
+		MOON_TIDAL_LOCK_LD + 1;
+	int invTidalLockTimeLog2_ceil = invTidalLockTimeLog2_floor + 3 + 8;
+	if (sbody->GetParent()->GetType() > SystemBody::TYPE_STAR_MAX) {
+		static const int SUN_MASS_TO_EARTH_MASS_LD = SUN_MASS_TO_EARTH_MASS.Log2();
+		invTidalLockTimeLog2_floor -= 2 * SUN_MASS_TO_EARTH_MASS_LD - 2;
+		invTidalLockTimeLog2_ceil -= 2 * SUN_MASS_TO_EARTH_MASS_LD;
+	}
+	if (invTidalLockTimeLog2_floor >= 4) // certainly above 16
+		invTidalLockTime = fixed(16,1);
+	else if (invTidalLockTimeLog2_ceil <= -7) // certainly below 1/128
+		invTidalLockTime = fixed(1,128);
+	else { // Might be somewhere between 2^-17 and 2^14
+		// fine-tuned not to give overflows, order of evaluation matters!
+		// XXX But it gives overflows nevertheless
+		if (sbody->GetParent()->GetType() <= SystemBody::TYPE_STAR_MAX) {
+			invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed());
+			invTidalLockTime *= sbody->GetMassAsFixed();
+			invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed());
+			invTidalLockTime *= sbody->GetParent()->GetMassAsFixed()*sbody->GetParent()->GetMassAsFixed();
+			invTidalLockTime /= sbody->GetRadiusAsFixed();
+			invTidalLockTime /= sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed();
+			invTidalLockTime /= MOON_TIDAL_LOCK;
+		} else {
+			invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*SUN_MASS_TO_EARTH_MASS;
+			invTidalLockTime *= sbody->GetMassAsFixed();
+			invTidalLockTime /= (sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed())*SUN_MASS_TO_EARTH_MASS;
+			invTidalLockTime *= sbody->GetParent()->GetMassAsFixed()*sbody->GetParent()->GetMassAsFixed();
+			invTidalLockTime /= sbody->GetRadiusAsFixed();
+			invTidalLockTime /= sbody->GetSemiMajorAxisAsFixed() * sbody->GetSemiMajorAxisAsFixed();
+			invTidalLockTime /= MOON_TIDAL_LOCK;
+		}
 	}
 	//Output("tidal lock of %s: %.5f, a %.5f R %.4f mp %.3f ms %.3f\n", name.c_str(),
 	//		invTidalLockTime.ToFloat(), semiMajorAxis.ToFloat(), radius.ToFloat(), parent->mass.ToFloat(), mass.ToFloat());
@@ -956,9 +979,10 @@ static fixed mass_from_disk_area(fixed a, fixed b, fixed max)
 	assert(a<=max);
 	assert(b<=max);
 	assert(a>=0);
-	fixed one_over_3max = fixed(2,1)/(3*max);
-	return (b*b - one_over_3max*b*b*b) -
-		(a*a - one_over_3max*a*a*a);
+	fixed two_over_3max = fixed(2,1)/(3*max);
+	fixed result = b*b*(fixed(1,1) - two_over_3max*b) - a*a*(fixed(1,1) - two_over_3max*a);
+	assert(result >= 0);
+	return std::max(fixed(0), result);
 }
 
 static fixed get_disc_density(SystemBody *primary, fixed discMin, fixed discMax, fixed percentOfPrimaryMass)
@@ -966,7 +990,9 @@ static fixed get_disc_density(SystemBody *primary, fixed discMin, fixed discMax,
 	PROFILE_SCOPED()
 	discMax = std::max(discMax, discMin);
 	fixed total = mass_from_disk_area(discMin, discMax, discMax);
-	return primary->GetMassInEarths() * percentOfPrimaryMass / total;
+	fixed result = primary->GetMassInEarths() * percentOfPrimaryMass / total;
+	assert(result >= 0);
+	return result;
 }
 
 void StarSystemRandomGenerator::MakePlanetsAround(RefCountedPtr<StarSystem::GeneratorAPI> system, SystemBody *primary, Random &rand)
@@ -997,6 +1023,8 @@ void StarSystemRandomGenerator::MakePlanetsAround(RefCountedPtr<StarSystem::Gene
 		} else {
 			discMax = 100 * rand.NFixed(2)*fixed::SqrtOf(primary->GetMassAsFixed());
 		}
+		if (discMax <= discMin)
+			return;
 		// having limited discMin by bin-separation/fake roche, and
 		// discMax by some relation to star mass, we can now compute
 		// disc density
@@ -1018,7 +1046,8 @@ void StarSystemRandomGenerator::MakePlanetsAround(RefCountedPtr<StarSystem::Gene
 		   And use planets orbit around its primary as a scaler to a moon's orbit*/
 		discMax = std::min(discMax, fixed(1,20)*
 			CalcHillRadius(primary)*primary->m_orbMin*fixed(1,10));
-
+		if (discMax <= discMin)
+			return;
 		discDensity = rand.Fixed() * get_disc_density(primary, discMin, discMax, fixed(1,500));
 	}
 
@@ -1037,13 +1066,15 @@ void StarSystemRandomGenerator::MakePlanetsAround(RefCountedPtr<StarSystem::Gene
 		fixed apoapsis = 2*semiMajorAxis - periapsis;
 		if (apoapsis > discMax) break;
 
-		fixed mass;
+		fixed mass, m1;
 		{
 			const fixed a = pos;
 			const fixed b = fixed(135,100)*apoapsis;
-			mass = mass_from_disk_area(a, b, discMax);
+			m1 = mass = mass_from_disk_area(a, b, discMax);
+			assert(mass >= 0);
 			mass *= rand.Fixed() * discDensity;
 		}
+		assert(mass >= 0);
 		if (mass < 0) {// hack around overflow
 			Output("WARNING: planetary mass has overflowed! (child of %s)\n", primary->GetName().c_str());
 			mass = fixed(Sint64(0x7fFFffFFffFFffFFull));
