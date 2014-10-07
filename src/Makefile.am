@@ -332,7 +332,8 @@ tests_SOURCES = \
 	test_Frame.cpp \
 	test_StringF.cpp \
 	test_Random.cpp \
-	test_DateTime.cpp
+	test_DateTime.cpp \
+	test_fixedf_cuberoot.cpp
 TESTS = tests
 tests_LDADD = \
 	collider/libcollider.a \
