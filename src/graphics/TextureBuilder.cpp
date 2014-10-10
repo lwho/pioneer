@@ -4,6 +4,7 @@
 #include "TextureBuilder.h"
 #include "FileSystem.h"
 #include "utils.h"
+#include "MathUtil.h"
 #include <SDL_image.h>
 #include <SDL_rwops.h>
 #include <algorithm>
@@ -125,8 +126,8 @@ void TextureBuilder::PrepareSurface()
 
 		if (m_potExtend) {
 			// extend to power-of-two if necessary
-			actualWidth = ceil_pow2(m_surface->w);
-			actualHeight = ceil_pow2(m_surface->h);
+			actualWidth = MathUtil::ceil_pow2(m_surface->w);
+			actualHeight = MathUtil::ceil_pow2(m_surface->h);
 			if (actualWidth != virtualWidth || actualHeight != virtualHeight) {
 				if(m_textureType == TEXTURE_2D) {
 					SDL_Surface *s = SDL_CreateRGBSurface(SDL_SWSURFACE, actualWidth, actualHeight, targetPixelFormat->BitsPerPixel,
@@ -151,8 +152,8 @@ void TextureBuilder::PrepareSurface()
 		}
 		else if (! m_filename.empty()) {
 			// power-of-two check
-			unsigned long width = ceil_pow2(m_surface->w);
-			unsigned long height = ceil_pow2(m_surface->h);
+			unsigned long width = MathUtil::ceil_pow2(m_surface->w);
+			unsigned long height = MathUtil::ceil_pow2(m_surface->h);
 
 			if (width != virtualWidth || height != virtualHeight)
 				Output("WARNING: texture '%s' is not power-of-two and may not display correctly\n", m_filename.c_str());

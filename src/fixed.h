@@ -6,6 +6,7 @@
 
 #include <SDL_stdinc.h>
 #include <cassert>
+#include "MathUtil.h"
 
 template <int FRAC_BITS>
 class fixedf {
@@ -58,49 +59,37 @@ public:
 	friend fixedf operator-(const fixedf a) { return fixedf(-a.v); }
 	friend fixedf operator+(const fixedf a, const fixedf b) { return fixedf(a.v+b.v); }
 	friend fixedf operator-(const fixedf a, const fixedf b) { return fixedf(a.v-b.v); }
-	friend fixedf operator*(const fixedf a, const fixedf b) {
+	friend fixedf operator*(fixedf a, fixedf b) {
 		// 64*64 = (128bit>>FRAC) & ((1<<64)-1)
 		//return fixedf(a.v*b.v >> FRAC);
-		Sint64 hi = 0;
-		Uint64 a0, a1, b0, b1;
-		Uint64 lo = 0;
-		Uint64 oldlo;
+		Uint64 hi;
+		Uint64 lo;
 		int isneg = 0;
+		__int128_t check;
 		if (a.v < 0) {
-			a0 = (-a.v) & 0xffffffff;
-			a1 = (-a.v) >> 32;
+			a.v = -a.v;
 			isneg = !isneg;
+			check = __int128_t(-a.v);
 		} else {
-			a0 = a.v & 0xffffffff;
-			a1 = a.v >> 32;
+			check = __int128_t(a.v);
 		}
 		if (b.v < 0) {
-			b0 = (-b.v) & 0xffffffff;
-			b1 = (-b.v) >> 32;
+			b.v = -b.v;
 			isneg = !isneg;
+			check *= __int128_t(-b.v);
 		} else {
-			b0 = b.v & 0xffffffff;
-			b1 = b.v >> 32;
+			check *= __int128_t(b.v);
 		}
-		Uint64 x;
-		// a0 * b;
-		lo = a0*b0; oldlo = lo;
-		x = a0*b1;
-		lo += x<<32;
-		if (lo < oldlo) hi++;
-		oldlo = lo;
-		hi += (x>>32);
-
-		// a1 * b;
-		x = a1*b0;
-		lo += x<<32;
-		if (lo < oldlo) hi++;
-		oldlo = lo;
-		hi += x>>32;
-
-		hi += a1*b1;
+		MathUtil::mult64to128(a.v, b.v, &hi, &lo);
 		Sint64 out = (lo>>FRAC) + ((hi&MASK)<<(64-FRAC));
-		return isneg ? -out : out;
+		check >>= FRAC;
+		if (isneg) {
+			check = -check;
+			out = -out;
+		}
+		//assert(check <= INT64_MAX);
+		assert(check > INT64_MAX || check < INT64_MIN || out == check);
+		return out;
 	}
 	friend fixedf operator/(const fixedf a, const fixedf b) {
 		// 128-bit divided by 64-bit, to make sure high bits are not lost

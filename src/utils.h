@@ -142,18 +142,6 @@ static inline float roundf(float x)
 }
 #endif /* _MSC_VER < 1800 */
 
-static inline Uint32 ceil_pow2(Uint32 v)
-{
-	v--;
-	v |= v >> 1;
-	v |= v >> 2;
-	v |= v >> 4;
-	v |= v >> 8;
-	v |= v >> 16;
-	v++;
-	return v;
-}
-
 void hexdump(const unsigned char *buf, int bufsz);
 
 #endif /* _UTILS_H */
