@@ -561,7 +561,7 @@ SystemPath StarSystem::GetPathOf(const SystemBody *sbody) const
 	return sbody->GetPath();
 }
 
-SystemBody::SystemBody(const SystemPath& path, StarSystem *system) : m_parent(nullptr), m_path(path), m_seed(0), m_aspectRatio(1,1), m_orbMin(0),
+SystemBody::SystemBody(const SystemPath& path, StarSystem *system) : m_parent(nullptr), m_path(path), m_explored(false), m_seed(0), m_aspectRatio(1,1), m_orbMin(0),
 	m_orbMax(0), m_rotationalPhaseAtStart(0), m_semiMajorAxis(0), m_eccentricity(0), m_orbitalOffset(0), m_axialTilt(0),
 	m_inclination(0), m_averageTemp(0), m_type(TYPE_GRAVPOINT), m_isCustomBody(false), m_heightMapFractal(0), m_atmosDensity(0.0), m_system(system)
 {
@@ -721,7 +721,8 @@ void StarSystem::MakeShortDescription()
 	PROFILE_SCOPED()
 	if (GetExplored() == StarSystem::eUNEXPLORED)
 		SetShortDesc(Lang::UNEXPLORED_SYSTEM_NO_DATA);
-
+	else if (GetExplored() == StarSystem::ePARTIALLY_EXPLORED)
+		SetShortDesc(stringf(Lang::PARTIALLY_EXPLORED_SYSTEM, formatarg("date", format_date_only(GetExploredTime()))));
 	else if (GetExplored() == StarSystem::eEXPLORED_BY_PLAYER)
 		SetShortDesc(stringf(Lang::RECENTLY_EXPLORED_SYSTEM, formatarg("date", format_date_only(GetExploredTime()))));
 
@@ -756,17 +757,60 @@ void StarSystem::MakeShortDescription()
 }
 
 
-void StarSystem::ExploreSystem(double time)
+StarSystem::ExplorationState StarSystem::CheckPartialExplore()
 {
-	if (m_explored != eUNEXPLORED)
+	return std::all_of(m_bodies.begin(), m_bodies.end(), [](RefCountedPtr<SystemBody> sbody) { return sbody->IsExplored(); }) ?
+		eEXPLORED_BY_PLAYER : ePARTIALLY_EXPLORED;
+}
+
+void StarSystem::ExploreSystem(double time, bool allBodies)
+{
+	if (m_explored == eEXPLORED_AT_START || m_explored == eEXPLORED_BY_PLAYER)
 		return;
-	m_explored = eEXPLORED_BY_PLAYER;
-	m_exploredTime = time;
+	bool wasExplored = IsExplored();
+	if (allBodies) {
+		m_rootBody->ExploreBodyAndChildren(time, true);
+		m_explored = eEXPLORED_BY_PLAYER;
+		m_exploredTime = time;
+	} else {
+		ExplorationState explored = CheckPartialExplore();
+		if (explored == m_explored)
+			return;
+		assert(explored > m_explored); // We don't support unexploring
+		if (m_explored == eUNEXPLORED)
+			m_exploredTime = time;
+		m_explored = explored;
+	}
 	RefCountedPtr<Sector> sec = m_galaxy->GetMutableSector(m_path);
 	Sector::System& secsys = sec->m_systems[m_path.systemIndex];
 	secsys.SetExplored(m_explored, m_exploredTime);
 	MakeShortDescription();
-	LuaEvent::Queue("onSystemExplored", this);
+	onSystemChanged.emit();
+	if (!wasExplored)
+		LuaEvent::Queue("onSystemExplored", this);
+}
+
+void SystemBody::ExploreBody(double time, bool suppressSignal)
+{
+	if (!m_explored) {
+		m_explored = true;
+		if (!suppressSignal)
+			m_system->ExploreSystem(time, false);
+	}
+}
+
+bool SystemBody::ExploreBodyAndChildren(double time, bool suppressSignal)
+{
+	bool changed = false;
+	if (!m_explored) {
+		m_explored = true;
+		changed = true;
+	}
+	for (auto& kid : m_children)
+		changed |= kid->ExploreBodyAndChildren(time, true);
+	if (changed && !suppressSignal)
+		m_system->ExploreSystem(time, false);
+	return changed;
 }
 
 void SystemBody::Dump(FILE* file, const char* indent) const

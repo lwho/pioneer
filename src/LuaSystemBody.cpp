@@ -22,6 +22,47 @@
  */
 
 /*
+ * Method: Explore
+ *
+ * Set the system body to be explored by the Player.
+ *
+ * > sbody:Explore()
+ *
+ * Parameters:
+ *
+ *   recursive - optional, marks all descendent bodies as explored as well.
+ *   time - optional, if system was previously unexplored, set the systems
+ *          exploration time to that value (defaults to current game time)
+ *
+ * Availability:
+ *
+ *   tbd
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_sbody_explore(lua_State *l)
+{
+	LUA_DEBUG_START(l);
+
+	SystemBody *sbody = LuaObject<SystemBody>::CheckFromLua(1);
+	bool recursive = lua_toboolean(l, 2);
+	double time;
+	if (lua_isnumber(l, 3))
+		time = luaL_checknumber(l, 3);
+	else
+		time = Pi::game->GetTime();
+	if (recursive)
+		sbody->ExploreBodyAndChildren(time);
+	else
+		sbody->ExploreBody(time);
+
+	LUA_DEBUG_END(l,0);
+	return 0;
+}
+
+/*
  * Attribute: index
  *
  * The body index of the body in its system
@@ -418,10 +459,39 @@ static int l_sbody_attr_is_scoopable(lua_State *l)
 	return 1;
 }
 
+/*
+ * Attribute: isExplored
+ *
+ * Returns true if the system body has been explored, false if not
+ *
+ * Availablility:
+ *
+ *   October 2014
+ *
+ * Status:
+ *
+ *  experimental
+ */
+
+static int l_sbody_attr_is_explored(lua_State *l)
+{
+	SystemBody * sbody = LuaObject<SystemBody>::CheckFromLua(1);
+	lua_pushboolean(l, sbody->IsExplored());
+	return 1;
+}
+
+
+
 template <> const char *LuaObject<SystemBody>::s_type = "SystemBody";
 
 template <> void LuaObject<SystemBody>::RegisterClass()
 {
+	static const luaL_Reg l_methods[] = {
+		{ "Explore", l_sbody_explore },
+
+		{ 0, 0 }
+	};
+
 	static const luaL_Reg l_attrs[] = {
 		{ "index",          l_sbody_attr_index           },
 		{ "name",           l_sbody_attr_name            },
@@ -442,8 +512,9 @@ template <> void LuaObject<SystemBody>::RegisterClass()
 		{ "averageTemp",    l_sbody_attr_average_temp    },
 		{ "hasAtmosphere",  l_sbody_attr_has_atmosphere  },
 		{ "isScoopable",    l_sbody_attr_is_scoopable    },
+		{ "isExplored",     l_sbody_attr_is_explored     },
 		{ 0, 0 }
 	};
 
-	LuaObjectBase::CreateClass(s_type, 0, 0, l_attrs, 0);
+	LuaObjectBase::CreateClass(s_type, 0, l_methods, l_attrs, 0);
 }

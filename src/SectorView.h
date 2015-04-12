@@ -60,12 +60,21 @@ private:
 		Color outOfRangeColor;
 	};
 
-	struct SystemLabels {
-		Gui::Label *systemName;
-		Gui::Label *sector;
-		DistanceIndicator distance;
-		Gui::Label *starType;
-		Gui::Label *shortDesc;
+	class SystemLabels {
+	public:
+		SystemLabels(SectorView& secView, const SystemPath& path) : m_secView(secView), m_path(path), m_systemName(nullptr), m_sector(nullptr), m_starType(nullptr), m_shortDesc(nullptr) { }
+		~SystemLabels() { m_onChangeCon.disconnect(); }
+
+		void Update();
+
+		SectorView& m_secView;
+		const SystemPath& m_path;
+		Gui::Label *m_systemName;
+		Gui::Label *m_sector;
+		DistanceIndicator m_distance;
+		Gui::Label *m_starType;
+		Gui::Label *m_shortDesc;
+		sigc::connection m_onChangeCon;
 	};
 
 	void DrawNearSectors(const matrix4x4f& modelview);

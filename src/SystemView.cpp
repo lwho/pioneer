@@ -102,7 +102,6 @@ SystemView::SystemView(Game* game) : UIView(), m_game(game)
 	m_lineState = Pi::renderer->CreateRenderState(rsd); //m_renderer not set yet
 
 	m_realtime = true;
-	m_unexplored = true;
 
 	Gui::Screen::PushFont("OverlayFont");
 	m_objectLabels = new Gui::LabelSet();
@@ -269,6 +268,8 @@ SystemView::~SystemView()
 {
 	m_contacts.clear();
 	m_onMouseWheelCon.disconnect();
+	if (m_system)
+		m_systemSlot->disconnect();
 }
 
 void SystemView::OnClickAccel(float step)
@@ -462,6 +463,7 @@ void SystemView::OnClickShip(Ship *s) {
 
 void SystemView::PutBody(const SystemBody *b, const vector3d &offset, const matrix4x4f &trans)
 {
+	if (!b->IsExplored()) return;
 	if (b->GetType() == SystemBody::TYPE_STARPORT_SURFACE) return;
 	if (b->GetType() != SystemBody::TYPE_GRAVPOINT) {
 
@@ -508,6 +510,7 @@ void SystemView::PutBody(const SystemBody *b, const vector3d &offset, const matr
 
 	if (b->HasChildren()) {
 		for(const SystemBody* kid : b->GetChildren()) {
+			if (!kid->IsExplored()) continue;
 			if (is_zero_general(kid->GetOrbit().GetSemiMajorAxis())) continue;
 			if (kid->GetOrbit().GetSemiMajorAxis() * m_zoom < ROUGH_SIZE_OF_TURD) {
 				PutOrbit(&(kid->GetOrbit()), offset, Color(0, 255, 0, 255));
@@ -576,6 +579,13 @@ void SystemView::GetTransformTo(const SystemBody *b, vector3d &pos)
 	}
 }
 
+void SystemView::Refresh()
+{
+	m_systemSlot->disconnect();
+	m_system.Reset();
+	ResetViewpoint();
+}
+
 void SystemView::Draw3D()
 {
 	PROFILE_SCOPED()
@@ -583,12 +593,8 @@ void SystemView::Draw3D()
 	m_renderer->ClearScreen();
 
 	SystemPath path = m_game->GetSectorView()->GetSelected().SystemOnly();
-	if (m_system) {
-		if (m_system->GetUnexplored() != m_unexplored || !m_system->GetPath().IsSameSystem(path)) {
-			m_system.Reset();
-			ResetViewpoint();
-		}
-	}
+	if (m_system && !m_system->GetPath().IsSameSystem(path))
+		Refresh();
 
 	if (m_realtime) {
 		m_time = m_game->GetTime();
@@ -601,7 +607,7 @@ void SystemView::Draw3D()
 
 	if (!m_system) {
 		m_system = m_game->GetGalaxy()->GetStarSystem(path);
-		m_unexplored = m_system->GetUnexplored();
+		m_systemSlot = m_system->onSystemChanged.connect(sigc::mem_fun(this, &SystemView::Refresh));
 	}
 
 	matrix4x4f trans = matrix4x4f::Identity();
@@ -624,7 +630,7 @@ void SystemView::Draw3D()
 			if (m_game->GetSpace()->GetStarSystem() == m_system) {
 				const Body *navTarget = Pi::player->GetNavTarget();
 				const SystemBody *navTargetSystemBody = navTarget ? navTarget->GetSystemBody() : 0;
-				if (navTargetSystemBody)
+				if (navTargetSystemBody && navTargetSystemBody->IsExplored())
 					PutSelectionBox(navTargetSystemBody, pos, Color::GREEN);
 			}
 		}

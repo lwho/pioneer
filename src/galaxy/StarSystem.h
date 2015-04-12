@@ -102,6 +102,8 @@ public:
 	const SystemPath& GetPath() const { return m_path; }
 	SystemBody* GetParent() const { return m_parent; }
 
+	bool IsExplored() const { return m_explored; }
+
 	bool HasChildren() const { return !m_children.empty(); }
 	unsigned GetNumChildren() const { return m_children.size(); }
 	IterationProxy<std::vector<SystemBody*> > GetChildren() { return MakeIterationProxy(m_children); }
@@ -225,6 +227,9 @@ public:
 
 	StarSystem* GetStarSystem() const { return m_system; }
 
+	void ExploreBody(double time, bool suppressSignal = false);
+	bool ExploreBodyAndChildren(double time, bool suppressSignal = false);
+
 private:
 	friend class StarSystem;
 	friend class ObjectViewerView;
@@ -239,6 +244,7 @@ private:
 	std::vector<SystemBody*> m_children; // that create them still exists
 
 	SystemPath m_path;
+	bool m_explored;
 	Orbit m_orbit;
 	Uint32 m_seed; // Planet.cpp can use to generate terrain
 	std::string m_name;
@@ -289,10 +295,12 @@ public:
 	friend class GalaxyObjectCache<StarSystem, SystemPath::LessSystemOnly>;
 	class GeneratorAPI; // Complete definition below
 
-	enum ExplorationState {
+	enum ExplorationState { // Order matters: completely unexplored --> completely explored
 		eUNEXPLORED = 0,
-		eEXPLORED_BY_PLAYER = 1,
-		eEXPLORED_AT_START = 2
+		ePARTIALLY_EXPLORED = 1,
+		eCOMPLETELY_EXPLORED = 2,
+		eEXPLORED_BY_PLAYER = eCOMPLETELY_EXPLORED,
+		eEXPLORED_AT_START = 3,
 	};
 
 	void ExportToLua(const char *filename);
@@ -334,10 +342,11 @@ public:
 	}
 
 	const Faction* GetFaction() const  { return m_faction; }
+	bool IsExplored() const { return m_explored != eUNEXPLORED; }
 	bool GetUnexplored() const { return m_explored == eUNEXPLORED; }
 	ExplorationState GetExplored() const { return m_explored; }
 	double GetExploredTime() const { return m_exploredTime; }
-	void ExploreSystem(double time);
+	void ExploreSystem(double time, bool allBodies = true);
 
 	fixed GetMetallicity() const { return m_metallicity; }
 	fixed GetIndustrial() const { return m_industrial; }
@@ -351,6 +360,8 @@ public:
 	void Dump(FILE* file, const char* indent = "", bool suppressSectorData = false) const;
 
 	const RefCountedPtr<Galaxy> m_galaxy;
+
+	sigc::signal<void> onSystemChanged;
 
 protected:
 	StarSystem(const SystemPath &path, RefCountedPtr<Galaxy> galaxy, StarSystemCache* cache, Random& rand);
@@ -366,6 +377,8 @@ protected:
 	void SetShortDesc(const std::string& desc) { m_shortDesc = desc; }
 
 private:
+	ExplorationState CheckPartialExplore();
+
 	void SetCache(StarSystemCache* cache) { assert(!m_cache); m_cache = cache; }
 
 	std::string ExportBodyToLua(FILE *f, SystemBody *body);
@@ -439,6 +452,8 @@ public:
 	using StarSystem::NewBody;
 	using StarSystem::MakeShortDescription;
 	using StarSystem::SetShortDesc;
+
+	SystemBody* GetBodyAtIndex(Uint32 i) { assert(i < m_bodies.size()); return m_bodies[i].Get(); }
 };
 
 #endif /* _STARSYSTEM_H */

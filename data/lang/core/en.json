@@ -1247,6 +1247,10 @@
       "description" : "",
       "message" : "Over %population million"
    },
+   "PARTIALLY_EXPLORED_SYSTEM" : {
+      "description" : "",
+      "message" : "This system is still being explored since %date."
+   },
    "PASSENGER_CABIN" : {
       "description" : "",
       "message" : "Occupied Passenger Cabin"
@@ -1378,6 +1382,10 @@
    "RADIUS" : {
       "description" : "",
       "message" : "Radius"
+   },
+   "RECENTLY_EXPLORED_SYSTEM" : {
+      "description" : "",
+      "message" : "This system was explored on %date."
    },
    "REQUEST_DOCKING_CLEARANCE" : {
       "description" : "",
@@ -1783,6 +1791,10 @@
       "description" : "",
       "message" : "A stellar black hole"
    },
+   "STELLAR_INFO" : {
+      "description" : "",
+      "message" : "Stellar info"
+   },
    "SUGGESTED_RESPONSES" : {
       "description" : "",
       "message" : "Suggested responses:"
@@ -1798,6 +1810,10 @@
    "SYSTEM" : {
       "description" : "star system",
       "message" : "System"
+   },
+   "SYSTEM_EXPLORATION_ONGOING" : {
+      "description" : "",
+      "message" : "System was first entered on %date and exploration is still ongoing.\nSo far, %bodycount major %{body(s)} and %portcount %{starport(s)} have been discovered"
    },
    "SYSTEM_NUMBER" : {
       "description" : "",
@@ -1926,10 +1942,6 @@
    "UNEXPLORED_SYSTEM_STAR_INFO_ONLY" : {
       "description" : "",
       "message" : "Unexplored System. Star information has been gathered by remote telescope, but no planetary information is available."
-   },
-   "RECENTLY_EXPLORED_SYSTEM" : {
-      "description" : "",
-      "message" : "This system was explored on %date."
    },
    "UNKNOWN" : {
       "description" : "",

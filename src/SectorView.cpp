@@ -24,6 +24,7 @@
 #include "gui/Gui.h"
 #include "KeyBindings.h"
 #include <algorithm>
+#include <functional>
 #include <sstream>
 #include <SDL_stdinc.h>
 
@@ -45,7 +46,9 @@ enum DetailSelection {
 static const float ZOOM_SPEED = 15;
 static const float WHEEL_SENSITIVITY = .03f;		// Should be a variable in user settings.
 
-SectorView::SectorView(Game* game) : UIView(), m_game(game), m_galaxy(game->GetGalaxy())
+SectorView::SectorView(Game* game) : UIView(), m_game(game), m_galaxy(game->GetGalaxy()),
+	m_currentSystemLabels(*this, m_current), m_selectedSystemLabels(*this, m_selected), m_targetSystemLabels(*this, m_hyperspaceTarget)
+
 {
 	InitDefaults();
 
@@ -76,7 +79,8 @@ SectorView::SectorView(Game* game) : UIView(), m_game(game), m_galaxy(game->GetG
 	InitObject();
 }
 
-SectorView::SectorView(Serializer::Reader &rd, Game* game) : UIView(), m_game(game), m_galaxy(game->GetGalaxy())
+SectorView::SectorView(Serializer::Reader &rd, Game* game) : UIView(), m_game(game), m_galaxy(game->GetGalaxy()),
+	m_currentSystemLabels(*this, m_current), m_selectedSystemLabels(*this, m_selected), m_targetSystemLabels(*this, m_hyperspaceTarget)
 {
 	InitDefaults();
 
@@ -203,21 +207,21 @@ void SectorView::InitObject()
 	systemBox->PackEnd(hbox);
 	hbox = new Gui::HBox();
 	hbox->SetSpacing(5.0f);
-	m_currentSystemLabels.systemName = (new Gui::Label(""))->Color(255, 255, 0);
-	m_currentSystemLabels.sector = (new Gui::Label(""))->Color(255, 255, 0);
-	m_currentSystemLabels.distance.label = (new Gui::Label(""))->Color(255, 0, 0);
-	m_currentSystemLabels.distance.line = NULL;
-	m_currentSystemLabels.distance.okayColor = ::Color(0, 255, 0);
-	m_currentSystemLabels.distance.unsuffFuelColor = ::Color(255, 255, 0);
-	m_currentSystemLabels.distance.outOfRangeColor = ::Color(255, 0, 0);
-	hbox->PackEnd(m_currentSystemLabels.systemName);
-	hbox->PackEnd(m_currentSystemLabels.sector);
+	m_currentSystemLabels.m_systemName = (new Gui::Label(""))->Color(255, 255, 0);
+	m_currentSystemLabels.m_sector = (new Gui::Label(""))->Color(255, 255, 0);
+	m_currentSystemLabels.m_distance.label = (new Gui::Label(""))->Color(255, 0, 0);
+	m_currentSystemLabels.m_distance.line = NULL;
+	m_currentSystemLabels.m_distance.okayColor = ::Color(0, 255, 0);
+	m_currentSystemLabels.m_distance.unsuffFuelColor = ::Color(255, 255, 0);
+	m_currentSystemLabels.m_distance.outOfRangeColor = ::Color(255, 0, 0);
+	hbox->PackEnd(m_currentSystemLabels.m_systemName);
+	hbox->PackEnd(m_currentSystemLabels.m_sector);
 	systemBox->PackEnd(hbox);
-	systemBox->PackEnd(m_currentSystemLabels.distance.label);
-	m_currentSystemLabels.starType = (new Gui::Label(""))->Color(255, 0, 255);
-	m_currentSystemLabels.shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
-	systemBox->PackEnd(m_currentSystemLabels.starType);
-	systemBox->PackEnd(m_currentSystemLabels.shortDesc);
+	systemBox->PackEnd(m_currentSystemLabels.m_distance.label);
+	m_currentSystemLabels.m_starType = (new Gui::Label(""))->Color(255, 0, 255);
+	m_currentSystemLabels.m_shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
+	systemBox->PackEnd(m_currentSystemLabels.m_starType);
+	systemBox->PackEnd(m_currentSystemLabels.m_shortDesc);
 	locationsBox->PackEnd(systemBox);
 	// 1.2 targeted system
 	systemBox = new Gui::VBox();
@@ -232,21 +236,21 @@ void SectorView::InitObject()
 	systemBox->PackEnd(hbox);
 	hbox = new Gui::HBox();
 	hbox->SetSpacing(5.0f);
-	m_targetSystemLabels.systemName = (new Gui::Label(""))->Color(255, 255, 0);
-	m_targetSystemLabels.sector = (new Gui::Label(""))->Color(255, 255, 0);
-	m_targetSystemLabels.distance.label = (new Gui::Label(""))->Color(255, 0, 0);
-	m_targetSystemLabels.distance.line = &m_jumpLine;
-	m_targetSystemLabels.distance.okayColor = ::Color(0, 255, 0);
-	m_targetSystemLabels.distance.unsuffFuelColor = ::Color(255, 255, 0);
-	m_targetSystemLabels.distance.outOfRangeColor = ::Color(255, 0, 0);
-	hbox->PackEnd(m_targetSystemLabels.systemName);
-	hbox->PackEnd(m_targetSystemLabels.sector);
+	m_targetSystemLabels.m_systemName = (new Gui::Label(""))->Color(255, 255, 0);
+	m_targetSystemLabels.m_sector = (new Gui::Label(""))->Color(255, 255, 0);
+	m_targetSystemLabels.m_distance.label = (new Gui::Label(""))->Color(255, 0, 0);
+	m_targetSystemLabels.m_distance.line = &m_jumpLine;
+	m_targetSystemLabels.m_distance.okayColor = ::Color(0, 255, 0);
+	m_targetSystemLabels.m_distance.unsuffFuelColor = ::Color(255, 255, 0);
+	m_targetSystemLabels.m_distance.outOfRangeColor = ::Color(255, 0, 0);
+	hbox->PackEnd(m_targetSystemLabels.m_systemName);
+	hbox->PackEnd(m_targetSystemLabels.m_sector);
 	systemBox->PackEnd(hbox);
-	systemBox->PackEnd(m_targetSystemLabels.distance.label);
-	m_targetSystemLabels.starType = (new Gui::Label(""))->Color(255, 0, 255);
-	m_targetSystemLabels.shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
-	systemBox->PackEnd(m_targetSystemLabels.starType);
-	systemBox->PackEnd(m_targetSystemLabels.shortDesc);
+	systemBox->PackEnd(m_targetSystemLabels.m_distance.label);
+	m_targetSystemLabels.m_starType = (new Gui::Label(""))->Color(255, 0, 255);
+	m_targetSystemLabels.m_shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
+	systemBox->PackEnd(m_targetSystemLabels.m_starType);
+	systemBox->PackEnd(m_targetSystemLabels.m_shortDesc);
 	m_secondDistance.label = (new Gui::Label(""))->Color(0, 128, 255);
 	m_secondDistance.line = &m_secondLine;
 	m_secondDistance.okayColor = ::Color(51, 153, 128);
@@ -265,21 +269,21 @@ void SectorView::InitObject()
 	systemBox->PackEnd(hbox);
 	hbox = new Gui::HBox();
 	hbox->SetSpacing(5.0f);
-	m_selectedSystemLabels.systemName = (new Gui::Label(""))->Color(255, 255, 0);
-	m_selectedSystemLabels.sector = (new Gui::Label(""))->Color(255, 255, 0);
-	m_selectedSystemLabels.distance.label = (new Gui::Label(""))->Color(255, 0, 0);
-	m_selectedSystemLabels.distance.line = &m_selectedLine;
-	m_selectedSystemLabels.distance.okayColor = ::Color(0, 255, 0);
-	m_selectedSystemLabels.distance.unsuffFuelColor = ::Color(255, 255, 0);
-	m_selectedSystemLabels.distance.outOfRangeColor = ::Color(255, 0, 0);
-	hbox->PackEnd(m_selectedSystemLabels.systemName);
-	hbox->PackEnd(m_selectedSystemLabels.sector);
+	m_selectedSystemLabels.m_systemName = (new Gui::Label(""))->Color(255, 255, 0);
+	m_selectedSystemLabels.m_sector = (new Gui::Label(""))->Color(255, 255, 0);
+	m_selectedSystemLabels.m_distance.label = (new Gui::Label(""))->Color(255, 0, 0);
+	m_selectedSystemLabels.m_distance.line = &m_selectedLine;
+	m_selectedSystemLabels.m_distance.okayColor = ::Color(0, 255, 0);
+	m_selectedSystemLabels.m_distance.unsuffFuelColor = ::Color(255, 255, 0);
+	m_selectedSystemLabels.m_distance.outOfRangeColor = ::Color(255, 0, 0);
+	hbox->PackEnd(m_selectedSystemLabels.m_systemName);
+	hbox->PackEnd(m_selectedSystemLabels.m_sector);
 	systemBox->PackEnd(hbox);
-	systemBox->PackEnd(m_selectedSystemLabels.distance.label);
-	m_selectedSystemLabels.starType = (new Gui::Label(""))->Color(255, 0, 255);
-	m_selectedSystemLabels.shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
-	systemBox->PackEnd(m_selectedSystemLabels.starType);
-	systemBox->PackEnd(m_selectedSystemLabels.shortDesc);
+	systemBox->PackEnd(m_selectedSystemLabels.m_distance.label);
+	m_selectedSystemLabels.m_starType = (new Gui::Label(""))->Color(255, 0, 255);
+	m_selectedSystemLabels.m_shortDesc = (new Gui::Label(""))->Color(255, 0, 255);
+	systemBox->PackEnd(m_selectedSystemLabels.m_starType);
+	systemBox->PackEnd(m_selectedSystemLabels.m_shortDesc);
 	locationsBox->PackEnd(systemBox);
 	m_infoBox->PackEnd(locationsBox);
 
@@ -328,9 +332,9 @@ void SectorView::InitObject()
 	m_onMouseWheelCon =
 		Pi::onMouseWheel.connect(sigc::mem_fun(this, &SectorView::MouseWheel));
 
-	UpdateSystemLabels(m_currentSystemLabels, m_current);
-	UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
-	UpdateSystemLabels(m_selectedSystemLabels, m_selected);
+	m_currentSystemLabels.Update();
+	m_targetSystemLabels.Update();
+	m_selectedSystemLabels.Update();
 	UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
 	UpdateHyperspaceLockLabel();
 
@@ -523,7 +527,7 @@ void SectorView::SetHyperspaceTarget(const SystemPath &path)
 
 	UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
 	UpdateHyperspaceLockLabel();
-	UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
+	m_targetSystemLabels.Update();
 }
 
 void SectorView::FloatHyperspaceTarget()
@@ -546,7 +550,7 @@ void SectorView::ResetHyperspaceTarget()
 	if (!old.IsSameSystem(m_hyperspaceTarget)) {
 		onHyperspaceTargetChanged.emit();
 		UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
-		UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
+		m_targetSystemLabels.Update();
 	} else {
 		if (m_detailBoxVisible == DETAILBOX_INFO) m_infoBox->ShowAll();
 	}
@@ -583,11 +587,11 @@ void SectorView::SetSelected(const SystemPath &path)
 	if (m_matchTargetToSelection && m_selected != m_current) {
 		m_hyperspaceTarget = m_selected;
 		onHyperspaceTargetChanged.emit();
-		UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
+		m_targetSystemLabels.Update();
 	}
 
 	UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
-	UpdateSystemLabels(m_selectedSystemLabels, m_selected);
+	m_selectedSystemLabels.Update();
 }
 
 void SectorView::OnClickSystem(const SystemPath &path)
@@ -792,11 +796,11 @@ void SectorView::UpdateDistanceLabelAndLine(DistanceIndicator &distance, const S
 	}
 }
 
-void SectorView::UpdateSystemLabels(SystemLabels &labels, const SystemPath &path)
+void SectorView::SystemLabels::Update()
 {
-	UpdateDistanceLabelAndLine(labels.distance, m_current, path);
+	m_secView.UpdateDistanceLabelAndLine(m_distance, m_secView.m_current, m_path);
 
-	RefCountedPtr<StarSystem> sys = m_galaxy->GetStarSystem(path);
+	RefCountedPtr<StarSystem> sys = m_secView.m_galaxy->GetStarSystem(m_path);
 
 	std::string desc;
 	if (sys->GetNumStars() == 4) {
@@ -808,20 +812,23 @@ void SectorView::UpdateSystemLabels(SystemLabels &labels, const SystemPath &path
 	} else {
 		desc = sys->GetRootBody()->GetAstroDescription();
 	}
-	labels.starType->SetText(desc);
+	m_starType->SetText(desc);
 
-	if (path.IsBodyPath()) {
-		labels.systemName->SetText(sys->GetBodyByPath(path)->GetName());
+	if (m_path.IsBodyPath()) {
+		m_systemName->SetText(sys->GetBodyByPath(m_path)->GetName());
 	} else {
-		labels.systemName->SetText(sys->GetName());
+		m_systemName->SetText(sys->GetName());
 	}
-	labels.sector->SetText(stringf("(%x,%y,%z)",
-		formatarg("x", int(path.sectorX)),
-		formatarg("y", int(path.sectorY)),
-		formatarg("z", int(path.sectorZ))));
-	labels.shortDesc->SetText(sys->GetShortDescription());
+	m_sector->SetText(stringf("(%x,%y,%z)",
+		formatarg("x", int(m_path.sectorX)),
+		formatarg("y", int(m_path.sectorY)),
+		formatarg("z", int(m_path.sectorZ))));
+	m_shortDesc->SetText(sys->GetShortDescription());
 
-	if (m_detailBoxVisible == DETAILBOX_INFO) m_infoBox->ShowAll();
+	if (m_secView.m_detailBoxVisible == DETAILBOX_INFO) m_secView.m_infoBox->ShowAll();
+
+	m_onChangeCon.disconnect();
+	m_onChangeCon = sys->onSystemChanged.connect(sigc::mem_fun(this, &SectorView::SystemLabels::Update));
 }
 
 void SectorView::OnToggleFaction(Gui::ToggleButton* button, bool pressed, const Faction* faction)
@@ -1159,8 +1166,8 @@ void SectorView::OnSwitchTo()
 
 	Update();
 
-	UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
-	UpdateSystemLabels(m_selectedSystemLabels, m_selected);
+	m_targetSystemLabels.Update();
+	m_selectedSystemLabels.Update();
 	UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
 }
 
@@ -1260,9 +1267,9 @@ void SectorView::Update()
 	}
 
 	if (last_inSystem != m_inSystem || last_current != m_current) {
-		UpdateSystemLabels(m_currentSystemLabels, m_current);
-		UpdateSystemLabels(m_targetSystemLabels, m_hyperspaceTarget);
-		UpdateSystemLabels(m_selectedSystemLabels, m_selected);
+		m_currentSystemLabels.Update();
+		m_targetSystemLabels.Update();
+		m_selectedSystemLabels.Update();
 		UpdateDistanceLabelAndLine(m_secondDistance, m_selected, m_hyperspaceTarget);
 	}
 
